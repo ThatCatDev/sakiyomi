@@ -33,8 +33,17 @@ test.describe('Home Page', () => {
 
     test('should create room from home page', async ({ page }) => {
       await page.goto('/');
-      await page.click('button:has-text("Create Room")');
+
+      // Click create room button to open modal
+      await page.click('#create-room-btn');
+      await expect(page.locator('#create-modal')).toBeVisible();
+
+      // Fill in room name and submit
+      await page.fill('#room-name', 'Home Page Room');
+      await page.click('#create-modal button[type="submit"]');
+
       await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+      await expect(page.locator('h1').first()).toContainText('Home Page Room');
     });
   });
 

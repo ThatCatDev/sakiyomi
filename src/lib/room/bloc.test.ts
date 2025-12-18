@@ -40,11 +40,13 @@ describe('RoomBloc', () => {
 
     bloc = new RoomBloc('https://test.supabase.co', 'test-key', {
       roomId: 'room-123',
+      roomName: 'Test Room',
       votingStatus: 'waiting',
       currentTopic: '',
       isManager: true,
       currentParticipantId: 'participant-123',
       showVotes: false,
+      voteOptions: ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'],
       currentVote: null,
     });
   });
@@ -66,11 +68,13 @@ describe('RoomBloc', () => {
     it('should initialize with existing vote', () => {
       const blocWithVote = new RoomBloc('https://test.supabase.co', 'test-key', {
         roomId: 'room-123',
+        roomName: 'Test Room',
         votingStatus: 'voting',
         currentTopic: 'Test Topic',
         isManager: false,
         currentParticipantId: 'participant-123',
         showVotes: true,
+        voteOptions: ['1', '2', '3'],
         currentVote: '5',
       });
 

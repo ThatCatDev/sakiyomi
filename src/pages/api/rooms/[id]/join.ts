@@ -38,9 +38,18 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
     .eq('id', roomId)
     .single();
 
-  // Determine role: manager if creator, otherwise member
+  // Check if there's already a manager in the room
+  const { data: existingManager } = await supabase
+    .from('room_participants')
+    .select('id')
+    .eq('room_id', roomId)
+    .eq('role', 'manager')
+    .limit(1)
+    .single();
+
+  // Determine role: manager only if creator AND no existing manager
   const isCreator = room?.creator_session_id === sessionId;
-  const role = isCreator ? 'manager' : 'member';
+  const role = (isCreator && !existingManager) ? 'manager' : 'member';
 
   // Check if participant already exists
   const { data: existing } = await supabase

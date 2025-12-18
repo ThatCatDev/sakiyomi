@@ -52,15 +52,64 @@ const { data: { user } } = await supabase.auth.getUser();
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <form method="POST" action="/api/rooms">
-            <input type="hidden" name="name" value="Planning Session" />
-            <button type="submit" class="btn-press px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-colors text-lg">
-              Create Room
-            </button>
-          </form>
+          <button id="create-room-btn" class="btn-press px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-colors text-lg">
+            Create Room
+          </button>
           <button id="join-room-btn" class="btn-press px-8 py-4 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-colors text-lg">
             Join Room
           </button>
+        </div>
+
+        <!-- Create Room Modal -->
+        <div id="create-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop">
+          <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 w-full max-w-md mx-4 modal-content">
+            <h2 class="text-xl font-semibold text-white mb-4">Create a Room</h2>
+            <form id="create-room-form" method="POST" action="/api/rooms" class="space-y-4">
+              <div>
+                <label for="room-name" class="block text-sm font-medium text-slate-400 mb-2">
+                  Room Name
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  id="room-name"
+                  required
+                  placeholder="e.g. Sprint Planning"
+                  class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+              <label for="is-permanent" class="flex items-center gap-3 cursor-pointer group">
+                <div class="relative">
+                  <input
+                    type="checkbox"
+                    name="is_permanent"
+                    id="is-permanent"
+                    class="sr-only peer"
+                  />
+                  <div class="w-10 h-6 bg-slate-700 rounded-full peer-checked:bg-indigo-600 transition-colors"></div>
+                  <div class="absolute left-1 top-1 w-4 h-4 bg-slate-400 rounded-full peer-checked:translate-x-4 peer-checked:bg-white transition-all"></div>
+                </div>
+                <span class="text-sm text-slate-300 group-hover:text-white transition-colors">
+                  Permanent room <span class="text-slate-500">(won't expire after inactivity)</span>
+                </span>
+              </label>
+              <div class="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  id="cancel-create-btn"
+                  class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  class="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
         <!-- Join Room Modal -->
@@ -145,6 +194,34 @@ const { data: { user } } = await supabase.auth.getUser();
 </Layout>
 
 <script>
+  // Create room modal
+  const createRoomBtn = document.getElementById('create-room-btn');
+  const createModal = document.getElementById('create-modal');
+  const cancelCreateBtn = document.getElementById('cancel-create-btn');
+  const roomNameInput = document.getElementById('room-name') as HTMLInputElement;
+
+  createRoomBtn?.addEventListener('click', () => {
+    createModal?.classList.remove('hidden', 'closing');
+    roomNameInput?.focus();
+  });
+
+  function closeCreateModal() {
+    createModal?.classList.add('closing');
+    setTimeout(() => {
+      createModal?.classList.add('hidden');
+      createModal?.classList.remove('closing');
+    }, 150);
+  }
+
+  cancelCreateBtn?.addEventListener('click', closeCreateModal);
+
+  createModal?.addEventListener('click', (e) => {
+    if (e.target === createModal) {
+      closeCreateModal();
+    }
+  });
+
+  // Join room modal
   const joinRoomBtn = document.getElementById('join-room-btn');
   const joinModal = document.getElementById('join-modal');
   const cancelJoinBtn = document.getElementById('cancel-join-btn');
@@ -152,14 +229,12 @@ const { data: { user } } = await supabase.auth.getUser();
   const roomCodeInput = document.getElementById('room-code') as HTMLInputElement;
   const joinModalError = document.getElementById('join-modal-error');
 
-  // Open modal
   joinRoomBtn?.addEventListener('click', () => {
     joinModal?.classList.remove('hidden', 'closing');
     roomCodeInput?.focus();
   });
 
-  // Close modal with animation
-  function closeModal() {
+  function closeJoinModal() {
     joinModal?.classList.add('closing');
     setTimeout(() => {
       joinModal?.classList.add('hidden');
@@ -169,19 +244,19 @@ const { data: { user } } = await supabase.auth.getUser();
     }, 150);
   }
 
-  cancelJoinBtn?.addEventListener('click', closeModal);
+  cancelJoinBtn?.addEventListener('click', closeJoinModal);
 
-  // Close on backdrop click
   joinModal?.addEventListener('click', (e) => {
     if (e.target === joinModal) {
-      closeModal();
+      closeJoinModal();
     }
   });
 
-  // Close on escape key
+  // Close modals on escape key
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !joinModal?.classList.contains('hidden')) {
-      closeModal();
+    if (e.key === 'Escape') {
+      if (!createModal?.classList.contains('hidden')) closeCreateModal();
+      if (!joinModal?.classList.contains('hidden')) closeJoinModal();
     }
   });
 

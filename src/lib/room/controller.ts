@@ -70,9 +70,23 @@ export class RoomController {
     copyIcon: HTMLElement | null;
     checkIcon: HTMLElement | null;
 
-    // Show votes toggle
+    // Show votes toggle (in manager controls - will be moved to settings)
     showVotesToggle: HTMLInputElement | null;
     showVotesDescription: HTMLElement | null;
+
+    // Settings modal
+    settingsModal: HTMLElement | null;
+    openSettingsBtn: HTMLElement | null;
+    cancelSettingsBtn: HTMLElement | null;
+    saveSettingsBtn: HTMLElement | null;
+    settingsRoomName: HTMLInputElement | null;
+    settingsShowVotes: HTMLInputElement | null;
+    settingsShowVotesDescription: HTMLElement | null;
+    voteOptionsDisplay: HTMLElement | null;
+    newVoteOptionInput: HTMLInputElement | null;
+    addOptionBtn: HTMLElement | null;
+    roomNameDisplay: HTMLElement | null;
+    voteCardsContainer: HTMLElement | null;
   };
 
   constructor(bloc: RoomBloc) {
@@ -146,6 +160,20 @@ export class RoomController {
       // Show votes toggle
       showVotesToggle: document.getElementById('show-votes-toggle') as HTMLInputElement,
       showVotesDescription: document.getElementById('show-votes-description'),
+
+      // Settings modal
+      settingsModal: document.getElementById('settings-modal'),
+      openSettingsBtn: document.getElementById('open-settings-btn'),
+      cancelSettingsBtn: document.getElementById('cancel-settings-btn'),
+      saveSettingsBtn: document.getElementById('save-settings-btn'),
+      settingsRoomName: document.getElementById('settings-room-name') as HTMLInputElement,
+      settingsShowVotes: document.getElementById('settings-show-votes') as HTMLInputElement,
+      settingsShowVotesDescription: document.getElementById('settings-show-votes-description'),
+      voteOptionsDisplay: document.getElementById('vote-options-display'),
+      newVoteOptionInput: document.getElementById('new-vote-option') as HTMLInputElement,
+      addOptionBtn: document.getElementById('add-option-btn'),
+      roomNameDisplay: document.getElementById('room-name-display'),
+      voteCardsContainer: document.getElementById('vote-cards'),
     };
   }
 
@@ -182,19 +210,60 @@ export class RoomController {
     this.elements.leaveRoomBtn?.addEventListener('click', () => this.openLeaveModal());
     this.elements.cancelLeaveBtn?.addEventListener('click', () => this.closeLeaveModal());
     this.elements.confirmLeaveBtn?.addEventListener('click', () => this.handleLeaveRoom());
-    this.elements.leaveModal?.addEventListener('click', (e) => {
-      if (e.target === this.elements.leaveModal) this.closeLeaveModal();
-    });
-
-    // Escape key for modal
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !this.elements.leaveModal?.classList.contains('hidden')) {
-        this.closeLeaveModal();
-      }
-    });
+    // Note: Backdrop click and escape key are handled by the Modal component
 
     // Join form
     this.elements.joinForm?.addEventListener('submit', (e) => this.handleJoinSubmit(e));
+
+    // Settings modal
+    this.elements.openSettingsBtn?.addEventListener('click', () => this.openSettingsModal());
+    this.elements.cancelSettingsBtn?.addEventListener('click', () => this.closeSettingsModal());
+    this.elements.saveSettingsBtn?.addEventListener('click', () => this.handleSaveSettings());
+    // Note: Close button, backdrop click and escape key are handled by the Modal component
+
+    // Settings - show votes toggle in modal
+    this.elements.settingsShowVotes?.addEventListener('change', () => {
+      const checked = this.elements.settingsShowVotes?.checked ?? false;
+      if (this.elements.settingsShowVotesDescription) {
+        this.elements.settingsShowVotesDescription.textContent = checked
+          ? 'All participants can see who voted what'
+          : 'Votes are shown anonymously';
+      }
+    });
+
+    // Settings - vote options
+    this.elements.addOptionBtn?.addEventListener('click', () => this.handleAddVoteOption());
+    this.elements.newVoteOptionInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.handleAddVoteOption();
+      }
+    });
+
+    // Settings - preset buttons
+    document.querySelectorAll('.preset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const preset = (btn as HTMLElement).dataset.preset;
+        if (preset) {
+          try {
+            const values = JSON.parse(preset) as string[];
+            this.renderVoteOptions(values);
+          } catch (e) {
+            console.error('Failed to parse preset:', e);
+          }
+        }
+      });
+    });
+
+    // Settings - remove option buttons (delegate)
+    this.elements.voteOptionsDisplay?.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const removeBtn = target.closest('.remove-option-btn');
+      if (removeBtn) {
+        const tag = removeBtn.closest('.vote-option-tag');
+        tag?.remove();
+      }
+    });
 
     // Copy functionality
     this.elements.copyBtn?.addEventListener('click', () => this.handleCopyLink());
@@ -219,9 +288,20 @@ export class RoomController {
         break;
       case 'vote_submitted':
         this.updateVoteCardSelection(event.payload as string);
+        // Also update own vote indicator immediately (don't wait for realtime)
+        this.updateOwnVoteIndicator(event.payload as string);
         break;
       case 'show_votes_changed':
         this.updateShowVotesUI(event.payload as boolean);
+        break;
+      case 'vote_options_changed':
+        this.updateVoteCardsUI(event.payload as string[]);
+        break;
+      case 'room_name_changed':
+        this.updateRoomNameUI(event.payload as string);
+        break;
+      case 'role_changed':
+        this.handleRoleChange(event.payload as { isManager: boolean });
         break;
       case 'error':
         this.showError(event.payload as string);
@@ -352,6 +432,23 @@ export class RoomController {
     const initialEl = el.querySelector('.participant-initial');
     if (initialEl) initialEl.textContent = participant.name.charAt(0).toUpperCase();
 
+    // Update role badge
+    const currentRole = el.getAttribute('data-participant-role');
+    if (currentRole !== participant.role) {
+      el.setAttribute('data-participant-role', participant.role);
+      const roleContainer = el.querySelector('.flex-1');
+      const existingBadge = roleContainer?.querySelector('.text-indigo-400');
+
+      if (participant.role === 'manager' && !existingBadge) {
+        const badge = document.createElement('span');
+        badge.className = 'text-xs text-indigo-400';
+        badge.textContent = 'Manager';
+        roleContainer?.appendChild(badge);
+      } else if (participant.role !== 'manager' && existingBadge) {
+        existingBadge.remove();
+      }
+    }
+
     // Update vote indicator
     this.updateVoteIndicator(el, participant.current_vote);
 
@@ -375,6 +472,22 @@ export class RoomController {
       indicator.innerHTML = `<svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
     } else {
       indicator.innerHTML = `<span>?</span>`;
+    }
+  }
+
+  private updateOwnVoteIndicator(vote: string): void {
+    // Find the current user's participant element and update their vote indicator
+    const currentParticipantId = this.bloc.currentParticipantId;
+    if (!currentParticipantId) return;
+
+    const el = this.elements.participantsList?.querySelector(`[data-participant-id="${currentParticipantId}"]`);
+    if (!el) return;
+
+    this.updateVoteIndicator(el, vote);
+
+    // Also update the "Your vote" display
+    if (this.elements.yourVoteDisplay) {
+      this.elements.yourVoteDisplay.textContent = vote || '-';
     }
   }
 
@@ -416,8 +529,8 @@ export class RoomController {
     this.elements.noParticipants?.classList.toggle('hidden', count > 0);
   }
 
-  // Color palette for pie chart slices - high contrast, easily distinguishable
-  private static readonly PIE_COLORS = [
+  // Color palette for vote groups - high contrast, easily distinguishable
+  private static readonly VOTE_COLORS = [
     '#6366f1', // indigo-500
     '#22c55e', // green-500
     '#f97316', // orange-500
@@ -431,93 +544,153 @@ export class RoomController {
   ];
 
   private calculateAndShowResults(): void {
-    const participants: { current_vote: string | null }[] = [];
+    // Collect participants with their votes and names
+    const participantVotes: { name: string; vote: string | null }[] = [];
 
     this.elements.participantsList?.querySelectorAll('li').forEach((li) => {
       const indicator = li.querySelector('.vote-indicator') as HTMLElement;
+      const nameEl = li.querySelector('.participant-name');
       const voteValue = indicator?.dataset.vote || null;
-      participants.push({ current_vote: voteValue });
+      const name = nameEl?.textContent || 'Unknown';
+      participantVotes.push({ name, vote: voteValue });
     });
 
-    const { results, average } = RoomBloc.calculateResults(participants);
+    // Group by vote value
+    const voteGroups: Record<string, string[]> = {};
+    const numericVotes: number[] = [];
 
-    // Render pie chart
-    this.renderPieChart(results);
+    participantVotes.forEach(({ name, vote }) => {
+      if (vote) {
+        if (!voteGroups[vote]) {
+          voteGroups[vote] = [];
+        }
+        voteGroups[vote].push(name);
+        const num = parseFloat(vote);
+        if (!isNaN(num)) {
+          numericVotes.push(num);
+        }
+      }
+    });
 
-    // Render vote distribution
+    // Sort vote groups by count (descending), then by vote value
+    const sortedVotes = Object.entries(voteGroups).sort((a, b) => {
+      if (b[1].length !== a[1].length) {
+        return b[1].length - a[1].length;
+      }
+      // Secondary sort by numeric value if possible
+      const numA = parseFloat(a[0]);
+      const numB = parseFloat(b[0]);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+      }
+      return a[0].localeCompare(b[0]);
+    });
+
+    const totalVoters = participantVotes.filter(p => p.vote).length;
+
+    // Render list of participants and their votes
     if (this.elements.voteResults) {
-      this.elements.voteResults.innerHTML = results.map(({ vote, count, percentage }, index) => {
-        const color = RoomController.PIE_COLORS[index % RoomController.PIE_COLORS.length];
-        return `
-          <div class="flex items-center gap-3">
-            <span class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-lg" style="background-color: ${color}">${vote}</span>
-            <div>
-              <span class="text-white font-medium">${count} vote${count > 1 ? 's' : ''}</span>
-              <span class="text-slate-400 text-sm ml-1">(${Math.round(percentage)}%)</span>
+      this.elements.voteResults.innerHTML = participantVotes
+        .filter(p => p.vote)
+        .map(({ name, vote }) => `
+          <div class="flex items-center justify-between py-2 px-3 bg-slate-900/50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 bg-indigo-600/80 rounded-full flex items-center justify-center text-white text-sm font-medium">${name.charAt(0).toUpperCase()}</span>
+              <span class="text-white">${name}</span>
             </div>
+            <span class="text-lg font-bold text-indigo-400">${vote}</span>
           </div>
-        `;
-      }).join('');
+        `).join('');
     }
+
+    // Calculate and display average
+    const average = numericVotes.length > 0
+      ? numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length
+      : null;
 
     if (this.elements.voteAverage) {
       this.elements.voteAverage.textContent = average !== null ? average.toFixed(1) : '-';
     }
+
+    // Render pie chart
+    this.renderPieChart(sortedVotes, totalVoters);
   }
 
-  private renderPieChart(results: { vote: string; count: number; percentage: number }[]): void {
+  private renderPieChart(sortedVotes: [string, string[]][], totalVoters: number): void {
     if (!this.elements.pieChart || !this.elements.pieLegend) return;
 
-    const totalVotes = results.reduce((sum, r) => sum + r.count, 0);
+    // Clear existing content
+    this.elements.pieChart.innerHTML = '';
+    this.elements.pieLegend.innerHTML = '';
 
-    if (totalVotes === 0) {
+    if (totalVoters === 0) {
       // Show empty state
       this.elements.pieChart.innerHTML = `
-        <circle cx="50" cy="50" r="40" fill="none" stroke="#334155" stroke-width="20" />
+        <circle cx="50" cy="50" r="45" fill="#334155" />
+        <text x="50" y="55" text-anchor="middle" fill="#94a3b8" font-size="8">No votes</text>
       `;
-      this.elements.pieLegend.innerHTML = '';
       return;
     }
 
-    // Create pie slices using stroke-dasharray and stroke-dashoffset
-    const radius = 40;
-    const circumference = 2 * Math.PI * radius;
-    let currentOffset = 0;
+    const cx = 50;
+    const cy = 50;
+    const radius = 45;
+    let currentAngle = -90; // Start from top
 
-    const slices: string[] = [];
-    const legendItems: string[] = [];
+    // Create pie slices
+    sortedVotes.forEach(([vote, names], index) => {
+      const percentage = names.length / totalVoters;
+      const angle = percentage * 360;
+      const color = RoomController.VOTE_COLORS[index % RoomController.VOTE_COLORS.length];
 
-    results.forEach(({ vote, percentage }, index) => {
-      const color = RoomController.PIE_COLORS[index % RoomController.PIE_COLORS.length];
-      const strokeLength = (percentage / 100) * circumference;
-      const gapLength = circumference - strokeLength;
+      if (percentage === 1) {
+        // Full circle - just draw a circle
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', String(cx));
+        circle.setAttribute('cy', String(cy));
+        circle.setAttribute('r', String(radius));
+        circle.setAttribute('fill', color);
+        this.elements.pieChart!.appendChild(circle);
+      } else {
+        // Create arc path
+        const startAngle = currentAngle;
+        const endAngle = currentAngle + angle;
 
-      slices.push(`
-        <circle
-          cx="50"
-          cy="50"
-          r="${radius}"
-          fill="none"
-          stroke="${color}"
-          stroke-width="20"
-          stroke-dasharray="${strokeLength} ${gapLength}"
-          stroke-dashoffset="${-currentOffset}"
-          class="pie-slice"
-        />
-      `);
+        const startRad = (startAngle * Math.PI) / 180;
+        const endRad = (endAngle * Math.PI) / 180;
 
-      legendItems.push(`
-        <div class="flex items-center gap-1">
-          <div class="w-2 h-2 rounded-full" style="background-color: ${color}"></div>
-          <span class="text-xs text-slate-300">${vote}</span>
-        </div>
-      `);
+        const x1 = cx + radius * Math.cos(startRad);
+        const y1 = cy + radius * Math.sin(startRad);
+        const x2 = cx + radius * Math.cos(endRad);
+        const y2 = cy + radius * Math.sin(endRad);
 
-      currentOffset += strokeLength;
+        const largeArcFlag = angle > 180 ? 1 : 0;
+
+        const pathData = [
+          `M ${cx} ${cy}`,
+          `L ${x1} ${y1}`,
+          `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+          'Z'
+        ].join(' ');
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('fill', color);
+        this.elements.pieChart!.appendChild(path);
+
+        currentAngle = endAngle;
+      }
+
+      // Create legend item
+      const legendItem = document.createElement('div');
+      legendItem.className = 'flex items-center gap-2 px-2 py-1 bg-slate-900/50 rounded';
+      legendItem.innerHTML = `
+        <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: ${color}"></span>
+        <span class="text-white font-medium">${vote}</span>
+        <span class="text-slate-400 text-sm">${Math.round(percentage * 100)}%</span>
+      `;
+      this.elements.pieLegend!.appendChild(legendItem);
     });
-
-    this.elements.pieChart.innerHTML = slices.join('');
-    this.elements.pieLegend.innerHTML = legendItems.join('');
   }
 
   // Event handlers
@@ -631,15 +804,13 @@ export class RoomController {
   }
 
   private openLeaveModal(): void {
-    this.elements.leaveModal?.classList.remove('hidden', 'closing');
+    // Use the Modal component's open function
+    (window as unknown as Record<string, () => void>)['open_leave-modal']?.();
   }
 
   private closeLeaveModal(): void {
-    this.elements.leaveModal?.classList.add('closing');
-    setTimeout(() => {
-      this.elements.leaveModal?.classList.add('hidden');
-      this.elements.leaveModal?.classList.remove('closing');
-    }, 150);
+    // Use the Modal component's close function with animation
+    (window as unknown as Record<string, () => void>)['close_leave-modal']?.();
   }
 
   private async handleLeaveRoom(): Promise<void> {
@@ -699,5 +870,168 @@ export class RoomController {
     console.error('Room error:', message);
     // Could show a toast notification here
     alert(`Error: ${message}`);
+  }
+
+  // Settings modal methods
+  private openSettingsModal(): void {
+    // Reset form to current values
+    if (this.elements.settingsRoomName) {
+      this.elements.settingsRoomName.value = this.bloc.roomName;
+    }
+    if (this.elements.settingsShowVotes) {
+      this.elements.settingsShowVotes.checked = this.bloc.showVotes;
+    }
+    if (this.elements.settingsShowVotesDescription) {
+      this.elements.settingsShowVotesDescription.textContent = this.bloc.showVotes
+        ? 'All participants can see who voted what'
+        : 'Votes are shown anonymously';
+    }
+    this.renderVoteOptions(this.bloc.voteOptions);
+    // Use the Modal component's open function
+    (window as unknown as Record<string, () => void>)['open_settings-modal']?.();
+  }
+
+  private closeSettingsModal(): void {
+    // Use the Modal component's close function with animation
+    (window as unknown as Record<string, () => void>)['close_settings-modal']?.();
+  }
+
+  private renderVoteOptions(options: string[]): void {
+    if (!this.elements.voteOptionsDisplay) return;
+
+    const isManager = this.bloc.isManager;
+    this.elements.voteOptionsDisplay.innerHTML = options.map((option) => `
+      <span
+        class="vote-option-tag inline-flex items-center gap-1 px-2 py-1 bg-slate-700 text-white text-sm rounded"
+        data-value="${option}"
+      >
+        ${option}
+        ${isManager ? `
+          <button type="button" class="remove-option-btn text-slate-400 hover:text-red-400 transition-colors">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        ` : ''}
+      </span>
+    `).join('');
+  }
+
+  private getCurrentVoteOptions(): string[] {
+    const options: string[] = [];
+    this.elements.voteOptionsDisplay?.querySelectorAll('.vote-option-tag').forEach((tag) => {
+      const value = (tag as HTMLElement).dataset.value;
+      if (value) options.push(value);
+    });
+    return options;
+  }
+
+  private handleAddVoteOption(): void {
+    if (!this.bloc.isManager) return;
+
+    const input = this.elements.newVoteOptionInput;
+    if (!input) return;
+
+    const value = input.value.trim();
+    if (!value || value.length > 5) return;
+
+    const currentOptions = this.getCurrentVoteOptions();
+    if (currentOptions.includes(value)) {
+      input.value = '';
+      return;
+    }
+
+    currentOptions.push(value);
+    this.renderVoteOptions(currentOptions);
+    input.value = '';
+  }
+
+  private async handleSaveSettings(): Promise<void> {
+    if (!this.bloc.isManager) return;
+
+    const name = this.elements.settingsRoomName?.value?.trim();
+    const showVotes = this.elements.settingsShowVotes?.checked ?? false;
+    const voteOptions = this.getCurrentVoteOptions();
+
+    if (!name) {
+      alert('Room name cannot be empty');
+      return;
+    }
+
+    if (voteOptions.length < 2) {
+      alert('At least 2 vote options are required');
+      return;
+    }
+
+    const success = await this.bloc.updateSettings({
+      name,
+      showVotes,
+      voteOptions,
+    });
+
+    if (success) {
+      this.closeSettingsModal();
+    }
+  }
+
+  private updateVoteCardsUI(voteOptions: string[]): void {
+    if (!this.elements.voteCardsContainer) return;
+
+    const currentVote = this.bloc.currentVote;
+    const isDisabled = this.bloc.votingStatus !== 'voting';
+
+    // Determine grid columns
+    const gridCols = voteOptions.length <= 5 ? 'grid-cols-5' : voteOptions.length <= 7 ? 'grid-cols-7' : 'grid-cols-5 sm:grid-cols-10';
+    this.elements.voteCardsContainer.className = `grid ${gridCols} gap-2 mb-8`;
+
+    this.elements.voteCardsContainer.innerHTML = voteOptions.map((value) => `
+      <button
+        class="vote-card aspect-[3/4] bg-slate-800 hover:bg-slate-700 border-2 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold text-white transition-all ${currentVote === value ? 'border-indigo-500 bg-indigo-600/20 selected' : 'border-slate-600 hover:border-indigo-500'}"
+        data-vote="${value}"
+        ${isDisabled ? 'disabled' : ''}
+      >
+        ${value}
+      </button>
+    `).join('');
+
+    // Re-bind click events
+    this.elements.voteCards = document.querySelectorAll('.vote-card') as NodeListOf<HTMLElement>;
+    this.elements.voteCards.forEach((card) => {
+      card.addEventListener('click', () => this.handleVoteClick(card));
+    });
+  }
+
+  private updateRoomNameUI(name: string): void {
+    if (this.elements.roomNameDisplay) {
+      this.elements.roomNameDisplay.textContent = name;
+    }
+    // Also update document title
+    document.title = `${name} - Story Poker`;
+  }
+
+  private handleRoleChange(payload: { isManager: boolean }): void {
+    if (payload.isManager) {
+      // Show manager controls
+      const managerControls = document.getElementById('manager-controls');
+      if (managerControls) {
+        managerControls.classList.remove('hidden');
+      }
+
+      // Show settings button
+      this.elements.openSettingsBtn?.classList.remove('hidden');
+
+      // Update manager badge in "You" section
+      const youSection = document.querySelector('.border-b.border-slate-800');
+      if (youSection && !youSection.querySelector('.text-indigo-400')) {
+        const roleSpan = document.createElement('span');
+        roleSpan.className = 'text-xs text-indigo-400';
+        roleSpan.textContent = 'Manager';
+        const nameContainer = youSection.querySelector('.flex-1');
+        nameContainer?.appendChild(roleSpan);
+      }
+
+      // Update the correct manager control state based on current voting status
+      this.updateVotingStatusUI(this.bloc.votingStatus);
+    }
   }
 }

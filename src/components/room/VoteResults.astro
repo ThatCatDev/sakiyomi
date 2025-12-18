@@ -12,36 +12,27 @@ const { votingStatus } = Astro.props;
   id="results-section"
   class:list={['bg-slate-800 rounded-xl p-6 border border-slate-700', { 'hidden': votingStatus !== 'revealed' }]}
 >
-  <h3 class="text-lg font-semibold text-white mb-4">Results</h3>
-
-  <!-- Split layout: Pie chart on left, vote distribution on right -->
-  <div class="flex flex-col md:flex-row gap-6">
-    <!-- Pie Chart -->
-    <div class="flex-shrink-0 flex flex-col items-center">
-      <div class="relative w-32 h-32" id="pie-chart-container">
-        <svg viewBox="0 0 100 100" class="w-full h-full transform -rotate-90" id="pie-chart">
-          <!-- Pie slices will be populated by JS -->
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#334155" stroke-width="20" class="pie-background" />
-        </svg>
-        <!-- Center average display -->
-        <div class="absolute inset-0 flex items-center justify-center">
-          <div class="text-center">
-            <span class="text-2xl font-bold text-white" id="vote-average">-</span>
-            <p class="text-xs text-slate-400">avg</p>
-          </div>
-        </div>
-      </div>
-      <!-- Legend -->
-      <div id="pie-legend" class="mt-3 flex flex-wrap justify-center gap-2 max-w-[160px]">
-        <!-- Legend items will be populated by JS -->
-      </div>
+  <!-- Header with average -->
+  <div class="flex items-center justify-between mb-6">
+    <h3 class="text-lg font-semibold text-white">Results</h3>
+    <div class="flex items-center gap-2">
+      <span class="text-slate-400 text-sm">Average:</span>
+      <span class="text-2xl font-bold text-white" id="vote-average">-</span>
     </div>
+  </div>
 
-    <!-- Vote Distribution -->
-    <div class="flex-1">
-      <div id="vote-results" class="space-y-3">
-        <!-- Results will be populated by JS -->
-      </div>
+  <!-- Pie chart and legend -->
+  <div class="flex flex-col sm:flex-row items-center gap-6 mb-6">
+    <svg id="pie-chart" viewBox="0 0 100 100" class="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
+      <!-- Pie slices will be populated by JS -->
+    </svg>
+    <div id="pie-legend" class="flex flex-wrap gap-2">
+      <!-- Legend items will be populated by JS -->
     </div>
+  </div>
+
+  <!-- Vote groups - each vote value with who voted for it -->
+  <div id="vote-results" class="space-y-4">
+    <!-- Results will be populated by JS -->
   </div>
 </div>

@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+// Helper to create a room via the modal
+async function createRoom(page: import('@playwright/test').Page, name = 'Test Room') {
+  await page.click('#create-room-btn');
+  await page.fill('#room-name', name);
+  await page.click('#create-modal button[type="submit"]');
+  await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+}
+
 test.describe('Manager Controls', () => {
   // Use large viewport to see sidebar
   test.use({ viewport: { width: 1280, height: 720 } });
@@ -8,8 +16,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create a room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page);
 
     // Join the room
     await page.fill('input[name="name"]', 'Room Manager');
@@ -27,7 +34,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room as manager
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#manager-controls')).toBeVisible();
@@ -41,7 +48,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room as manager
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     const roomUrl = page.url();
 
     await page.fill('input[name="name"]', 'Room Manager');
@@ -71,7 +78,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#manager-controls')).toBeVisible();
@@ -94,7 +101,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#manager-controls')).toBeVisible();
@@ -110,7 +117,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#manager-controls')).toBeVisible();
@@ -134,7 +141,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
 
@@ -156,7 +163,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
 
@@ -182,7 +189,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
 
@@ -207,7 +214,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
 
@@ -233,7 +240,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
 
@@ -262,7 +269,7 @@ test.describe('Manager Controls', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
 
@@ -281,34 +288,42 @@ test.describe('Manager Controls', () => {
     await expect(voteIndicator.locator('svg')).toBeVisible({ timeout: 5000 });
   });
 
-  test('manager can toggle show votes setting', async ({ page }) => {
+  test('manager can toggle show votes setting in settings modal', async ({ page }) => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#manager-controls')).toBeVisible();
 
+    // Open settings modal
+    await page.click('#open-settings-btn');
+    await expect(page.locator('#settings-modal')).toBeVisible();
+
     // Toggle should be visible and unchecked by default
-    const toggle = page.locator('#show-votes-toggle');
+    const toggle = page.locator('#settings-show-votes');
     await expect(toggle).not.toBeChecked();
 
     // Click the label (since the checkbox is sr-only)
-    await page.locator('label:has(#show-votes-toggle)').click();
+    await page.locator('label:has(#settings-show-votes)').click();
 
     // Toggle should now be checked
     await expect(toggle).toBeChecked({ timeout: 5000 });
 
     // Description should update
-    await expect(page.locator('#show-votes-description')).toContainText('All participants can see who voted what');
+    await expect(page.locator('#settings-show-votes-description')).toContainText('All participants can see who voted what');
+
+    // Close modal using the Modal component's close button
+    await page.click('#settings-modal .close-modal-btn');
+    await expect(page.locator('#settings-modal')).toBeHidden();
   });
 
   test('manager always sees who voted what after reveal', async ({ page }) => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#manager-controls')).toBeVisible();
@@ -328,30 +343,121 @@ test.describe('Manager Controls', () => {
     await expect(page.locator('.vote-display')).toContainText('voted 8');
   });
 
-  test('show votes toggle changes description text', async ({ page }) => {
+  test('settings modal show votes toggle changes description text', async ({ page }) => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Room Manager');
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#manager-controls')).toBeVisible();
 
+    // Open settings modal
+    await page.click('#open-settings-btn');
+    await expect(page.locator('#settings-modal')).toBeVisible();
+
     // Initial state - votes are anonymous
-    await expect(page.locator('#show-votes-description')).toContainText('Votes are shown anonymously');
+    await expect(page.locator('#settings-show-votes-description')).toContainText('Votes are shown anonymously');
 
     // Enable show votes
-    await page.locator('label:has(#show-votes-toggle)').click();
-    await expect(page.locator('#show-votes-toggle')).toBeChecked({ timeout: 5000 });
+    await page.locator('label:has(#settings-show-votes)').click();
+    await expect(page.locator('#settings-show-votes')).toBeChecked({ timeout: 5000 });
 
     // Description should update
-    await expect(page.locator('#show-votes-description')).toContainText('All participants can see who voted what');
+    await expect(page.locator('#settings-show-votes-description')).toContainText('All participants can see who voted what');
 
     // Toggle back
-    await page.locator('label:has(#show-votes-toggle)').click();
-    await expect(page.locator('#show-votes-toggle')).not.toBeChecked({ timeout: 5000 });
+    await page.locator('label:has(#settings-show-votes)').click();
+    await expect(page.locator('#settings-show-votes')).not.toBeChecked({ timeout: 5000 });
 
     // Description should revert
-    await expect(page.locator('#show-votes-description')).toContainText('Votes are shown anonymously');
+    await expect(page.locator('#settings-show-votes-description')).toContainText('Votes are shown anonymously');
+  });
+
+  test('manager role should transfer to another user when manager leaves', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Original Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'New Manager');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Second user should NOT see manager controls initially
+    await expect(page2.locator('#manager-controls')).not.toBeVisible();
+
+    // Manager leaves the room
+    await page.click('#leave-room-btn');
+    await expect(page.locator('#leave-modal')).toBeVisible();
+    await page.click('#confirm-leave-btn');
+
+    // Wait for page to reload (leave redirects/reloads)
+    await expect(page.locator('#join-section')).toBeVisible({ timeout: 10000 });
+
+    // Second user should now have manager controls
+    await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
+
+    // Second user should see Manager badge
+    await expect(page2.locator('text=Manager').first()).toBeVisible();
+
+    await context2.close();
+  });
+
+  test('manager role should transfer to oldest participant when manager leaves', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Original Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins first
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+    await page2.fill('input[name="name"]', 'First Joiner');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Third user joins second
+    const context3 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page3 = await context3.newPage();
+    await page3.goto(roomUrl);
+    await page3.fill('input[name="name"]', 'Second Joiner');
+    await page3.click('button:has-text("Join Room")');
+    await expect(page3.locator('#vote-cards-section')).toBeVisible();
+
+    // Neither should have manager controls
+    await expect(page2.locator('#manager-controls')).not.toBeVisible();
+    await expect(page3.locator('#manager-controls')).not.toBeVisible();
+
+    // Manager leaves
+    await page.click('#leave-room-btn');
+    await expect(page.locator('#leave-modal')).toBeVisible();
+    await page.click('#confirm-leave-btn');
+    await expect(page.locator('#join-section')).toBeVisible({ timeout: 10000 });
+
+    // First joiner (oldest) should become manager
+    await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
+
+    // Second joiner should NOT have manager controls
+    await expect(page3.locator('#manager-controls')).not.toBeVisible();
+
+    await context2.close();
+    await context3.close();
   });
 });

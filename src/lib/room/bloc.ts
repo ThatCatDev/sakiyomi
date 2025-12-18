@@ -9,9 +9,13 @@ export type RoomEventType =
   | 'voting_status_changed'
   | 'topic_changed'
   | 'show_votes_changed'
+  | 'vote_options_changed'
+  | 'room_name_changed'
+  | 'settings_changed'
   | 'participant_joined'
   | 'participant_left'
   | 'participant_updated'
+  | 'role_changed'
   | 'vote_submitted'
   | 'error';
 
@@ -30,12 +34,14 @@ export class RoomBloc {
 
   // State
   public roomId: string;
+  public roomName: string;
   public votingStatus: VotingStatus;
   public currentTopic: string;
   public isManager: boolean;
   public currentParticipantId: string | null;
   public currentVote: string | null = null;
   public showVotes: boolean;
+  public voteOptions: string[];
 
   constructor(
     supabaseUrl: string,
@@ -44,12 +50,14 @@ export class RoomBloc {
   ) {
     this.supabase = createClient(supabaseUrl, supabaseAnonKey);
     this.roomId = initialState.roomId;
+    this.roomName = initialState.roomName;
     this.votingStatus = initialState.votingStatus;
     this.currentTopic = initialState.currentTopic;
     this.isManager = initialState.isManager;
     this.currentParticipantId = initialState.currentParticipantId;
     this.currentVote = initialState.currentVote || null;
     this.showVotes = initialState.showVotes;
+    this.voteOptions = initialState.voteOptions;
   }
 
   // Event system
@@ -96,6 +104,15 @@ export class RoomBloc {
           // Update current vote if it's us
           if (participant.id === this.currentParticipantId) {
             this.currentVote = participant.current_vote;
+
+            // Check if role changed to manager
+            if (participant.role === 'manager' && !this.isManager) {
+              this.isManager = true;
+              this.emit({
+                type: 'role_changed',
+                payload: { isManager: true },
+              });
+            }
           }
 
           this.emit({
@@ -134,11 +151,19 @@ export class RoomBloc {
         },
         (payload) => {
           console.log('[RoomBloc] Room update received:', payload);
-          const room = payload.new as { voting_status: VotingStatus; current_topic: string | null; show_votes: boolean };
+          const room = payload.new as {
+            name: string;
+            voting_status: VotingStatus;
+            current_topic: string | null;
+            show_votes: boolean;
+            vote_options: string[];
+          };
 
           const statusChanged = room.voting_status !== this.votingStatus;
           const topicChanged = room.current_topic !== this.currentTopic;
           const showVotesChanged = room.show_votes !== this.showVotes;
+          const voteOptionsChanged = JSON.stringify(room.vote_options) !== JSON.stringify(this.voteOptions);
+          const nameChanged = room.name !== this.roomName;
 
           console.log('[RoomBloc] Status changed:', statusChanged, 'from', this.votingStatus, 'to', room.voting_status);
           console.log('[RoomBloc] Topic changed:', topicChanged, 'from', this.currentTopic, 'to', room.current_topic);
@@ -147,6 +172,8 @@ export class RoomBloc {
           this.votingStatus = room.voting_status;
           this.currentTopic = room.current_topic || '';
           this.showVotes = room.show_votes;
+          this.voteOptions = room.vote_options;
+          this.roomName = room.name;
 
           if (statusChanged) {
             // Clear vote when new round starts
@@ -171,6 +198,20 @@ export class RoomBloc {
             this.emit({
               type: 'show_votes_changed',
               payload: room.show_votes,
+            });
+          }
+
+          if (voteOptionsChanged) {
+            this.emit({
+              type: 'vote_options_changed',
+              payload: room.vote_options,
+            });
+          }
+
+          if (nameChanged) {
+            this.emit({
+              type: 'room_name_changed',
+              payload: room.name,
             });
           }
         }
@@ -295,6 +336,30 @@ export class RoomBloc {
     if (!result.success) {
       this.emit({ type: 'error', payload: result.error });
       return false;
+    }
+
+    return true;
+  }
+
+  async updateSettings(settings: Partial<api.RoomSettingsData>): Promise<boolean> {
+    if (!this.isManager) {
+      this.emit({ type: 'error', payload: 'Only managers can change room settings' });
+      return false;
+    }
+
+    const result = await api.updateRoomSettings(this.roomId, settings);
+
+    if (!result.success) {
+      this.emit({ type: 'error', payload: result.error });
+      return false;
+    }
+
+    // Emit settings changed event with the new settings
+    if (result.data) {
+      this.emit({
+        type: 'settings_changed',
+        payload: result.data,
+      });
     }
 
     return true;

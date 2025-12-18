@@ -13,6 +13,7 @@ export interface Room {
   created_at: string;
   last_activity_at: string;
   show_votes: boolean;
+  vote_options: string[];
 }
 
 export interface Participant {
@@ -28,11 +29,19 @@ export interface Participant {
 
 export interface RoomState {
   roomId: string;
+  roomName: string;
   votingStatus: VotingStatus;
   currentTopic: string;
   isManager: boolean;
   currentParticipantId: string | null;
   showVotes: boolean;
+  voteOptions: string[];
+}
+
+export interface RoomSettings {
+  name: string;
+  showVotes: boolean;
+  voteOptions: string[];
 }
 
 export interface VoteResult {

@@ -173,3 +173,42 @@ export async function toggleShowVotes(roomId: string): Promise<ApiResponse<{ sho
     return { success: false, error: 'Network error' };
   }
 }
+
+export interface RoomSettingsData {
+  name: string;
+  showVotes: boolean;
+  voteOptions: string[];
+}
+
+export async function updateRoomSettings(
+  roomId: string,
+  settings: Partial<RoomSettingsData>
+): Promise<ApiResponse<RoomSettingsData>> {
+  try {
+    const response = await fetch(`/api/rooms/${roomId}/settings`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: result.error || 'Failed to update settings' };
+    }
+
+    return {
+      success: true,
+      data: {
+        name: result.name,
+        showVotes: result.showVotes,
+        voteOptions: result.voteOptions,
+      },
+    };
+  } catch (err) {
+    console.error('Failed to update room settings:', err);
+    return { success: false, error: 'Network error' };
+  }
+}

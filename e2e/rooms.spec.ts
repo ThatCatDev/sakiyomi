@@ -1,25 +1,65 @@
 import { test, expect } from '@playwright/test';
 
+// Helper to create a room via the modal
+async function createRoom(page: import('@playwright/test').Page, name: string, isPermanent = false) {
+  await page.click('#create-room-btn');
+  await expect(page.locator('#create-modal')).toBeVisible();
+
+  await page.fill('#room-name', name);
+
+  if (isPermanent) {
+    await page.check('#is-permanent');
+  }
+
+  await page.click('#create-modal button[type="submit"]');
+  await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+}
+
 test.describe('Rooms', () => {
-  test('should create a room without authentication', async ({ page }) => {
+  test('should open create room modal', async ({ page }) => {
     await page.goto('/');
 
-    // Click Create Room (no login needed)
-    await page.click('button:has-text("Create Room")');
+    await page.click('#create-room-btn');
 
-    // Should redirect to room page
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    // Modal should be visible
+    await expect(page.locator('#create-modal')).toBeVisible();
+    await expect(page.locator('#room-name')).toBeVisible();
+    await expect(page.locator('#is-permanent')).toBeVisible();
+  });
 
-    // Room page should show room name
-    await expect(page.locator('h1').first()).toContainText('Planning Session');
+  test('should close create room modal on cancel', async ({ page }) => {
+    await page.goto('/');
+
+    await page.click('#create-room-btn');
+    await expect(page.locator('#create-modal')).toBeVisible();
+
+    await page.click('#cancel-create-btn');
+
+    await expect(page.locator('#create-modal')).toBeHidden();
+  });
+
+  test('should create a room with custom name', async ({ page }) => {
+    await page.goto('/');
+
+    await createRoom(page, 'Sprint Planning');
+
+    // Room page should show custom room name
+    await expect(page.locator('h1').first()).toContainText('Sprint Planning');
+  });
+
+  test('should create a permanent room', async ({ page }) => {
+    await page.goto('/');
+
+    await createRoom(page, 'Permanent Room', true);
+
+    // Room should be created
+    await expect(page.locator('h1').first()).toContainText('Permanent Room');
   });
 
   test('should display share link on room page', async ({ page }) => {
     await page.goto('/');
 
-    // Create room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page, 'Test Room');
 
     // Should show share link input
     const shareInput = page.locator('#room-url');
@@ -36,9 +76,7 @@ test.describe('Rooms', () => {
 
     await page.goto('/');
 
-    // Create room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page, 'Test Room');
 
     // Get the share URL
     const shareInput = page.locator('#room-url');
@@ -63,9 +101,7 @@ test.describe('Rooms', () => {
   test('should allow sharing room link with others', async ({ page, browser }) => {
     await page.goto('/');
 
-    // Create room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page, 'Shared Room');
 
     // Get room URL
     const roomUrl = page.url();
@@ -78,7 +114,7 @@ test.describe('Rooms', () => {
     await newPage.goto(roomUrl);
 
     // Should be able to view room
-    await expect(newPage.locator('h1').first()).toContainText('Planning Session');
+    await expect(newPage.locator('h1').first()).toContainText('Shared Room');
     await expect(newPage.locator('#room-url')).toBeVisible();
 
     await newContext.close();

@@ -1,14 +1,16 @@
 ---
-import type { VotingStatus, ValidVote } from '../../lib/room/types';
-import { VALID_VOTES } from '../../lib/room/types';
+import type { VotingStatus } from '../../lib/room/types';
 
 interface Props {
   currentVote?: string | null;
   votingStatus: VotingStatus;
+  voteOptions: string[];
 }
 
-const { currentVote, votingStatus } = Astro.props;
+const { currentVote, votingStatus, voteOptions } = Astro.props;
 const isDisabled = votingStatus !== 'voting';
+// Determine grid columns based on number of options
+const gridCols = voteOptions.length <= 5 ? 'grid-cols-5' : voteOptions.length <= 7 ? 'grid-cols-7' : 'grid-cols-5 sm:grid-cols-10';
 ---
 
 <div
@@ -16,8 +18,8 @@ const isDisabled = votingStatus !== 'voting';
   class:list={[{ 'opacity-50 pointer-events-none': isDisabled }]}
   data-voting-status={votingStatus}
 >
-  <div class="grid grid-cols-5 sm:grid-cols-10 gap-2 mb-8" id="vote-cards">
-    {VALID_VOTES.map((value) => (
+  <div class={`grid ${gridCols} gap-2 mb-8`} id="vote-cards">
+    {voteOptions.map((value) => (
       <button
         class:list={[
           'vote-card aspect-[3/4] bg-slate-800 hover:bg-slate-700 border-2 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold text-white transition-all',

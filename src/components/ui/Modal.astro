@@ -1,9 +1,11 @@
 ---
 interface Props {
   id: string;
-  title: string;
+  title?: string;
   description?: string;
   size?: 'sm' | 'md' | 'lg';
+  showCloseButton?: boolean;
+  noPadding?: boolean;
 }
 
 const {
@@ -11,6 +13,8 @@ const {
   title,
   description,
   size = 'sm',
+  showCloseButton = false,
+  noPadding = false,
 } = Astro.props;
 
 const sizeClasses = {
@@ -22,10 +26,24 @@ const sizeClasses = {
 
 <div
   id={id}
-  class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop"
+  class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 modal-backdrop"
 >
-  <div class={`bg-slate-800 rounded-2xl p-6 border border-slate-700 w-full mx-4 modal-content ${sizeClasses[size]}`}>
-    <h2 class="text-xl font-semibold text-white mb-2">{title}</h2>
+  <div class={`bg-slate-800 rounded-2xl border border-slate-700 w-full modal-content max-h-[90vh] overflow-y-auto ${sizeClasses[size]} ${noPadding ? '' : 'p-6'}`}>
+    {(title || showCloseButton) && (
+      <div class:list={['flex items-center justify-between', { 'mb-2': title && !noPadding }]}>
+        {title && <h2 class="text-xl font-semibold text-white">{title}</h2>}
+        {showCloseButton && (
+          <button
+            class="close-modal-btn text-slate-400 hover:text-white transition-colors p-1 -mr-1"
+            data-modal-id={id}
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+    )}
     {description && <p class="text-slate-400 mb-6">{description}</p>}
     <slot />
   </div>
@@ -54,6 +72,11 @@ const sizeClasses = {
     if (e.target === modal) {
       window[`close_${id}`]();
     }
+  });
+
+  // Close button click
+  modal?.querySelector('.close-modal-btn')?.addEventListener('click', () => {
+    window[`close_${id}`]();
   });
 
   document.addEventListener('keydown', (e) => {

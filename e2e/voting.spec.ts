@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+// Helper to create a room via the modal
+async function createRoom(page: import('@playwright/test').Page, name = 'Test Room') {
+  await page.click('#create-room-btn');
+  await page.fill('#room-name', name);
+  await page.click('#create-modal button[type="submit"]');
+  await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+}
+
 test.describe('Voting Flow', () => {
   // Use large viewport to see sidebar
   test.use({ viewport: { width: 1280, height: 720 } });
@@ -8,8 +16,7 @@ test.describe('Voting Flow', () => {
     await page.goto('/');
 
     // Create a room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page);
 
     // Join the room
     await page.fill('input[name="name"]', 'Test Voter');
@@ -24,7 +31,7 @@ test.describe('Voting Flow', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Test Voter');
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#vote-cards-section')).toBeVisible();
@@ -40,7 +47,7 @@ test.describe('Voting Flow', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Test Voter');
     await page.click('button:has-text("Join Room")');
 
@@ -53,7 +60,7 @@ test.describe('Voting Flow', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Test Voter');
     await page.click('button:has-text("Join Room")');
 
@@ -66,7 +73,7 @@ test.describe('Voting Flow', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Test Voter');
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#vote-cards-section')).toBeVisible();
@@ -79,7 +86,7 @@ test.describe('Voting Flow', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
+    await createRoom(page);
     await page.fill('input[name="name"]', 'Test Voter');
     await page.click('button:has-text("Join Room")');
 

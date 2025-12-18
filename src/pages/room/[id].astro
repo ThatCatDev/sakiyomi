@@ -11,6 +11,7 @@ import StatusBanner from '../../components/room/StatusBanner.astro';
 import ParticipantsSidebar from '../../components/room/ParticipantsSidebar.astro';
 import VoteResults from '../../components/room/VoteResults.astro';
 import LeaveModal from '../../components/room/LeaveModal.astro';
+import RoomSettingsModal from '../../components/room/RoomSettingsModal.astro';
 
 import type { Participant, VotingStatus } from '../../lib/room/types';
 
@@ -63,6 +64,7 @@ const isManager = currentParticipant?.role === 'manager';
 const votingStatus = (room.voting_status || 'waiting') as VotingStatus;
 const currentTopic = room.current_topic || '';
 const showVotes = room.show_votes ?? false;
+const voteOptions = room.vote_options || ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'];
 ---
 
 <Layout title={`${room.name} - Story Poker`}>
@@ -80,7 +82,19 @@ const showVotes = room.show_votes ?? false;
             <span class="text-lg font-bold text-white hidden sm:inline">Story Poker</span>
           </a>
           <span class="text-slate-500">|</span>
-          <h1 class="text-white font-medium truncate max-w-[200px] sm:max-w-none">{room.name}</h1>
+          <h1 class="text-white font-medium truncate max-w-[200px] sm:max-w-none" id="room-name-display">{room.name}</h1>
+          {currentParticipant && (
+            <button
+              id="open-settings-btn"
+              class="text-slate-400 hover:text-white transition-colors p-1"
+              title="Room Settings"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          )}
         </div>
 
         <div class="flex items-center gap-3">
@@ -134,13 +148,13 @@ const showVotes = room.show_votes ?? false;
             </div>
 
             <!-- Manager Controls -->
-            {isManager && <ManagerControls votingStatus={votingStatus} showVotes={showVotes} />}
+            {isManager && <ManagerControls votingStatus={votingStatus} />}
 
             <!-- Status Banner -->
             <StatusBanner votingStatus={votingStatus} />
 
             <!-- Story Point Cards -->
-            <VotingCards currentVote={currentParticipant?.current_vote} votingStatus={votingStatus} />
+            <VotingCards currentVote={currentParticipant?.current_vote} votingStatus={votingStatus} voteOptions={voteOptions} />
 
             <!-- Your Vote Display -->
             <div class="text-center mb-8" id="your-vote-section">
@@ -168,16 +182,26 @@ const showVotes = room.show_votes ?? false;
 
   <!-- Leave Room Modal -->
   <LeaveModal />
+
+  <!-- Settings Modal -->
+  <RoomSettingsModal
+    roomName={room.name}
+    showVotes={showVotes}
+    voteOptions={voteOptions}
+    isManager={isManager}
+  />
 </Layout>
 
 <!-- Hidden data for client-side JS -->
 <script id="room-data" type="application/json" set:html={JSON.stringify({
   roomId: room.id,
+  roomName: room.name,
   currentParticipantId: currentParticipant?.id || null,
   isManager,
   votingStatus,
   currentTopic,
   showVotes,
+  voteOptions,
   currentVote: currentParticipant?.current_vote || null,
   supabaseUrl,
   supabaseAnonKey,
@@ -198,11 +222,13 @@ const showVotes = room.show_votes ?? false;
       roomData.supabaseAnonKey,
       {
         roomId: roomData.roomId,
+        roomName: roomData.roomName,
         votingStatus: roomData.votingStatus,
         currentTopic: roomData.currentTopic,
         isManager: roomData.isManager,
         currentParticipantId: roomData.currentParticipantId,
         showVotes: roomData.showVotes,
+        voteOptions: roomData.voteOptions,
         currentVote: roomData.currentVote,
       }
     );

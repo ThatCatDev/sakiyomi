@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+// Helper to create a room via the modal
+async function createRoom(page: import('@playwright/test').Page, name = 'Test Room') {
+  await page.click('#create-room-btn');
+  await page.fill('#room-name', name);
+  await page.click('#create-modal button[type="submit"]');
+  await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+}
+
 test.describe('Room Participants', () => {
   // Use large viewport to see sidebar
   test.use({ viewport: { width: 1280, height: 720 } });
@@ -8,8 +16,7 @@ test.describe('Room Participants', () => {
     await page.goto('/');
 
     // Create a room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page);
 
     // Should see join form
     await expect(page.locator('#join-section')).toBeVisible();
@@ -24,8 +31,7 @@ test.describe('Room Participants', () => {
     await page.goto('/');
 
     // Create a room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page);
 
     // Fill in name and join
     await page.fill('input[name="name"]', 'Test User');
@@ -48,8 +54,7 @@ test.describe('Room Participants', () => {
     await page.goto('/');
 
     // Create a room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page);
 
     // Try to submit empty form (browser validation should prevent)
     const nameInput = page.locator('input[name="name"]');
@@ -60,8 +65,7 @@ test.describe('Room Participants', () => {
     await page.goto('/');
 
     // Create a room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page);
 
     const roomUrl = page.url();
 
@@ -86,8 +90,7 @@ test.describe('Room Participants', () => {
     await page.goto('/');
 
     // Create a room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page);
 
     const roomUrl = page.url();
 
@@ -125,8 +128,7 @@ test.describe('Room Participants', () => {
     await page.goto('/');
 
     // Create a room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page);
 
     const roomUrl = page.url();
 
@@ -161,8 +163,7 @@ test.describe('Room Participants', () => {
     await page.goto('/');
 
     // Create and join room
-    await page.click('button:has-text("Create Room")');
-    await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
+    await createRoom(page);
 
     await page.fill('input[name="name"]', 'Alice');
     await page.click('button:has-text("Join Room")');

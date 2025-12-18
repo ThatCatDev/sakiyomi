@@ -22,6 +22,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
   const formData = await request.formData();
   const name = formData.get('name') as string || 'Planning Session';
+  const isPermanent = formData.get('is_permanent') === 'on';
 
   const { data: room, error } = await supabase
     .from('rooms')
@@ -29,6 +30,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       name,
       created_by: user?.id || null,
       creator_session_id: sessionId,
+      is_permanent: isPermanent,
     })
     .select()
     .single();
