@@ -1,14 +1,25 @@
 {
-  "name": "magenta-motion",
+  "name": "story-poker",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "dev": "bunx --bun astro dev",
+    "build": "bunx --bun astro build",
+    "preview": "bunx --bun astro preview",
+    "astro": "astro",
+    "test": "bunx playwright test",
+    "test:ui": "bunx playwright test --ui",
+    "test:headed": "bunx playwright test --headed"
   },
   "dependencies": {
-    "astro": "^5.16.6"
+    "@astrojs/node": "^9.5.1",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.88.0",
+    "@tailwindcss/vite": "^4.1.18",
+    "astro": "^5.16.6",
+    "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0"
   }
 }
