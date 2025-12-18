@@ -13,9 +13,9 @@ test.describe('Home Page', () => {
       await expect(page.locator('span.text-indigo-400:has-text("together")')).toBeVisible();
       await expect(page.locator('text=A simple, real-time planning poker tool')).toBeVisible();
 
-      // CTAs for guests
-      await expect(page.locator('text=Get Started Free')).toBeVisible();
-      await expect(page.locator('a.px-8:has-text("Sign In")')).toBeVisible();
+      // CTAs - Create Room available for everyone
+      await expect(page.locator('button:has-text("Create Room")')).toBeVisible();
+      await expect(page.locator('button:has-text("Join Room")')).toBeVisible();
 
       // Features section
       await expect(page.locator('text=How it works')).toBeVisible();
@@ -31,23 +31,17 @@ test.describe('Home Page', () => {
       await expect(page.locator('nav a:has-text("Sign up")')).toBeVisible();
     });
 
-    test('should navigate to signup from Get Started button', async ({ page }) => {
+    test('should create room from home page', async ({ page }) => {
       await page.goto('/');
-      await page.click('text=Get Started Free');
-      await expect(page).toHaveURL('/signup');
-    });
-
-    test('should navigate to login from Sign In button', async ({ page }) => {
-      await page.goto('/');
-      await page.click('a.px-8:has-text("Sign In")');
-      await expect(page).toHaveURL('/login');
+      await page.click('button:has-text("Create Room")');
+      await expect(page).toHaveURL(/\/room\/[a-f0-9-]+/);
     });
   });
 
   test.describe('Authenticated', () => {
     const testPassword = 'TestPassword123!';
 
-    test('should show Create Room and Join Room buttons when logged in', async ({ page }) => {
+    test('should show user menu when logged in', async ({ page }) => {
       const email = `testhome${Date.now()}@test.com`;
 
       // Sign up
@@ -58,12 +52,11 @@ test.describe('Home Page', () => {
       await page.click('button[type="submit"]');
       await page.waitForURL('/');
 
-      // Check authenticated home page
-      await expect(page.locator('text=Create Room')).toBeVisible();
-      await expect(page.locator('text=Join Room')).toBeVisible();
+      // Check authenticated home page has user menu
+      await expect(page.locator('#user-menu-button')).toBeVisible();
 
-      // Should NOT show guest CTAs
-      await expect(page.locator('text=Get Started Free')).not.toBeVisible();
+      // Should NOT show sign in/up links
+      await expect(page.locator('nav a:has-text("Sign in")')).not.toBeVisible();
     });
 
     test('should show user menu dropdown when logged in', async ({ page }) => {

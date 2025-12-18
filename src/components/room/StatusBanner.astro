@@ -1,0 +1,35 @@
+---
+import type { VotingStatus } from '../../lib/room/types';
+
+interface Props {
+  votingStatus: VotingStatus;
+}
+
+const { votingStatus } = Astro.props;
+---
+
+<div id="status-banner" class="text-center mb-6">
+  <div
+    id="status-waiting"
+    class:list={['inline-flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-full', { 'hidden': votingStatus !== 'waiting' }]}
+  >
+    <span class="w-2 h-2 bg-slate-500 rounded-full"></span>
+    <span class="text-slate-400 text-sm">Waiting for manager to start voting</span>
+  </div>
+
+  <div
+    id="status-voting"
+    class:list={['inline-flex items-center gap-2 px-4 py-2 bg-indigo-900/50 rounded-full', { 'hidden': votingStatus !== 'voting' }]}
+  >
+    <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+    <span class="text-indigo-300 text-sm">Voting in progress</span>
+  </div>
+
+  <div
+    id="status-revealed"
+    class:list={['inline-flex items-center gap-2 px-4 py-2 bg-green-900/50 rounded-full', { 'hidden': votingStatus !== 'revealed' }]}
+  >
+    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+    <span class="text-green-300 text-sm">Votes revealed</span>
+  </div>
+</div>

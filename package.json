@@ -8,8 +8,12 @@
     "preview": "bunx --bun astro preview",
     "astro": "astro",
     "test": "bunx playwright test",
+    "test:unit": "bunx vitest run",
+    "test:unit:watch": "bunx vitest",
+    "test:e2e": "bunx playwright test",
     "test:ui": "bunx playwright test --ui",
-    "test:headed": "bunx playwright test --headed"
+    "test:headed": "bunx playwright test --headed",
+    "test:all": "bunx vitest run && bunx playwright test"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.1",
@@ -20,6 +24,9 @@
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
-    "@playwright/test": "^1.57.0"
+    "@playwright/test": "^1.57.0",
+    "@testing-library/dom": "^10.4.1",
+    "jsdom": "^27.3.0",
+    "vitest": "^4.0.16"
   }
 }

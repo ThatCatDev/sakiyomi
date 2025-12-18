@@ -1,0 +1,40 @@
+---
+interface Props {
+  type?: 'text' | 'email' | 'password';
+  name: string;
+  id?: string;
+  placeholder?: string;
+  value?: string;
+  required?: boolean;
+  readonly?: boolean;
+  class?: string;
+  centered?: boolean;
+}
+
+const {
+  type = 'text',
+  name,
+  id,
+  placeholder,
+  value,
+  required = false,
+  readonly = false,
+  class: className = '',
+  centered = false,
+} = Astro.props;
+
+const baseClasses = 'w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent';
+const centeredClass = centered ? 'text-center' : '';
+const classes = `${baseClasses} ${centeredClass} ${className}`;
+---
+
+<input
+  type={type}
+  name={name}
+  id={id || name}
+  placeholder={placeholder}
+  value={value}
+  required={required}
+  readonly={readonly}
+  class={classes}
+/>

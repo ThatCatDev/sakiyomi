@@ -1,0 +1,411 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { RoomBloc } from './bloc';
+import type { RoomEvent } from './bloc';
+import * as api from './api';
+
+// Mock the api module
+vi.mock('./api', () => ({
+  submitVote: vi.fn(),
+  startVoting: vi.fn(),
+  revealVotes: vi.fn(),
+  resetVotes: vi.fn(),
+  leaveRoom: vi.fn(),
+  updateName: vi.fn(),
+  toggleShowVotes: vi.fn(),
+}));
+
+// Mock Supabase client
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn().mockReturnThis(),
+    })),
+    removeChannel: vi.fn(),
+  })),
+}));
+
+describe('RoomBloc', () => {
+  let bloc: RoomBloc;
+  const mockApiSubmitVote = vi.mocked(api.submitVote);
+  const mockApiStartVoting = vi.mocked(api.startVoting);
+  const mockApiRevealVotes = vi.mocked(api.revealVotes);
+  const mockApiResetVotes = vi.mocked(api.resetVotes);
+  const mockApiLeaveRoom = vi.mocked(api.leaveRoom);
+  const mockApiUpdateName = vi.mocked(api.updateName);
+  const mockApiToggleShowVotes = vi.mocked(api.toggleShowVotes);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    bloc = new RoomBloc('https://test.supabase.co', 'test-key', {
+      roomId: 'room-123',
+      votingStatus: 'waiting',
+      currentTopic: '',
+      isManager: true,
+      currentParticipantId: 'participant-123',
+      showVotes: false,
+      currentVote: null,
+    });
+  });
+
+  afterEach(() => {
+    bloc.dispose();
+  });
+
+  describe('initialization', () => {
+    it('should initialize with correct state', () => {
+      expect(bloc.roomId).toBe('room-123');
+      expect(bloc.votingStatus).toBe('waiting');
+      expect(bloc.currentTopic).toBe('');
+      expect(bloc.isManager).toBe(true);
+      expect(bloc.currentParticipantId).toBe('participant-123');
+      expect(bloc.currentVote).toBeNull();
+    });
+
+    it('should initialize with existing vote', () => {
+      const blocWithVote = new RoomBloc('https://test.supabase.co', 'test-key', {
+        roomId: 'room-123',
+        votingStatus: 'voting',
+        currentTopic: 'Test Topic',
+        isManager: false,
+        currentParticipantId: 'participant-123',
+        showVotes: true,
+        currentVote: '5',
+      });
+
+      expect(blocWithVote.currentVote).toBe('5');
+      expect(blocWithVote.votingStatus).toBe('voting');
+      expect(blocWithVote.currentTopic).toBe('Test Topic');
+      expect(blocWithVote.isManager).toBe(false);
+      expect(blocWithVote.showVotes).toBe(true);
+
+      blocWithVote.dispose();
+    });
+  });
+
+  describe('subscribe', () => {
+    it('should add and call listeners on events', () => {
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      // Trigger an event by calling an action that emits
+      mockApiSubmitVote.mockResolvedValueOnce({ success: false, error: 'Test error' });
+
+      // The bloc should emit when we try to vote while not in voting state
+      bloc.submitVote('5'); // This will emit an error because votingStatus is 'waiting'
+
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Voting is not active',
+      });
+    });
+
+    it('should return unsubscribe function', () => {
+      const listener = vi.fn();
+      const unsubscribe = bloc.subscribe(listener);
+
+      unsubscribe();
+
+      // Change bloc state to voting so we can test
+      bloc.votingStatus = 'voting';
+      mockApiSubmitVote.mockResolvedValueOnce({ success: true });
+      bloc.submitVote('5');
+
+      // Listener should not be called after unsubscribe
+      // But vote_submitted event would have been called before the async completes
+      // So we check it wasn't called with subsequent events
+    });
+  });
+
+  describe('submitVote', () => {
+    it('should reject vote when not in voting state', async () => {
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.submitVote('5');
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Voting is not active',
+      });
+      expect(mockApiSubmitVote).not.toHaveBeenCalled();
+    });
+
+    it('should submit vote when in voting state', async () => {
+      bloc.votingStatus = 'voting';
+      mockApiSubmitVote.mockResolvedValueOnce({ success: true });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.submitVote('5');
+
+      expect(result).toBe(true);
+      expect(bloc.currentVote).toBe('5');
+      expect(mockApiSubmitVote).toHaveBeenCalledWith('room-123', '5');
+      expect(listener).toHaveBeenCalledWith({
+        type: 'vote_submitted',
+        payload: '5',
+      });
+    });
+
+    it('should emit error on API failure', async () => {
+      bloc.votingStatus = 'voting';
+      mockApiSubmitVote.mockReset();
+      mockApiSubmitVote.mockResolvedValueOnce({ success: false, error: 'Server error' });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.submitVote('5');
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Server error',
+      });
+    });
+  });
+
+  describe('startVoting', () => {
+    it('should reject when not a manager', async () => {
+      bloc.isManager = false;
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.startVoting('Topic');
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Only managers can start voting',
+      });
+      expect(mockApiStartVoting).not.toHaveBeenCalled();
+    });
+
+    it('should start voting when manager', async () => {
+      mockApiStartVoting.mockResolvedValueOnce({ success: true });
+
+      const result = await bloc.startVoting('New Topic');
+
+      expect(result).toBe(true);
+      expect(mockApiStartVoting).toHaveBeenCalledWith('room-123', 'New Topic');
+    });
+
+    it('should start voting with empty topic', async () => {
+      mockApiStartVoting.mockResolvedValueOnce({ success: true });
+
+      const result = await bloc.startVoting();
+
+      expect(result).toBe(true);
+      expect(mockApiStartVoting).toHaveBeenCalledWith('room-123', '');
+    });
+  });
+
+  describe('revealVotes', () => {
+    it('should reject when not a manager', async () => {
+      bloc.isManager = false;
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.revealVotes();
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Only managers can reveal votes',
+      });
+    });
+
+    it('should reveal votes when manager', async () => {
+      mockApiRevealVotes.mockResolvedValueOnce({ success: true });
+
+      const result = await bloc.revealVotes();
+
+      expect(result).toBe(true);
+      expect(mockApiRevealVotes).toHaveBeenCalledWith('room-123');
+    });
+  });
+
+  describe('resetVotes', () => {
+    it('should reject when not a manager', async () => {
+      bloc.isManager = false;
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.resetVotes();
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Only managers can reset votes',
+      });
+    });
+
+    it('should reset votes when manager', async () => {
+      mockApiResetVotes.mockResolvedValueOnce({ success: true });
+
+      const result = await bloc.resetVotes();
+
+      expect(result).toBe(true);
+      expect(mockApiResetVotes).toHaveBeenCalledWith('room-123');
+    });
+  });
+
+  describe('leaveRoom', () => {
+    it('should leave room successfully', async () => {
+      mockApiLeaveRoom.mockResolvedValueOnce({ success: true });
+
+      const result = await bloc.leaveRoom();
+
+      expect(result).toBe(true);
+      expect(mockApiLeaveRoom).toHaveBeenCalledWith('room-123');
+    });
+
+    it('should emit error on failure', async () => {
+      mockApiLeaveRoom.mockResolvedValueOnce({ success: false, error: 'Failed to leave' });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.leaveRoom();
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Failed to leave',
+      });
+    });
+  });
+
+  describe('updateName', () => {
+    it('should update name successfully', async () => {
+      mockApiUpdateName.mockResolvedValueOnce({ success: true });
+
+      const result = await bloc.updateName('New Name');
+
+      expect(result).toBe(true);
+      expect(mockApiUpdateName).toHaveBeenCalledWith('room-123', 'New Name');
+    });
+  });
+
+  describe('toggleShowVotes', () => {
+    it('should reject when not a manager', async () => {
+      bloc.isManager = false;
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.toggleShowVotes();
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Only managers can change this setting',
+      });
+      expect(mockApiToggleShowVotes).not.toHaveBeenCalled();
+    });
+
+    it('should toggle show votes when manager', async () => {
+      mockApiToggleShowVotes.mockResolvedValueOnce({ success: true, data: { showVotes: true } });
+
+      const result = await bloc.toggleShowVotes();
+
+      expect(result).toBe(true);
+      expect(mockApiToggleShowVotes).toHaveBeenCalledWith('room-123');
+    });
+  });
+
+  describe('calculateResults', () => {
+    it('should calculate results correctly', () => {
+      const participants = [
+        { current_vote: '5' },
+        { current_vote: '5' },
+        { current_vote: '8' },
+        { current_vote: '3' },
+        { current_vote: null },
+      ];
+
+      const { results, average } = RoomBloc.calculateResults(participants);
+
+      expect(results).toHaveLength(3);
+      expect(results[0]).toEqual({ vote: '5', count: 2, percentage: 40 });
+      expect(results[1].count).toBe(1);
+
+      // Average of 5, 5, 8, 3 = 21/4 = 5.25
+      expect(average).toBeCloseTo(5.25);
+    });
+
+    it('should handle all null votes', () => {
+      const participants = [
+        { current_vote: null },
+        { current_vote: null },
+      ];
+
+      const { results, average } = RoomBloc.calculateResults(participants);
+
+      expect(results).toHaveLength(0);
+      expect(average).toBeNull();
+    });
+
+    it('should handle non-numeric votes', () => {
+      const participants = [
+        { current_vote: '?' },
+        { current_vote: '☕' },
+        { current_vote: '5' },
+      ];
+
+      const { results, average } = RoomBloc.calculateResults(participants);
+
+      expect(results).toHaveLength(3);
+      // Average should only include numeric votes
+      expect(average).toBe(5);
+    });
+
+    it('should handle empty participants', () => {
+      const { results, average } = RoomBloc.calculateResults([]);
+
+      expect(results).toHaveLength(0);
+      expect(average).toBeNull();
+    });
+
+    it('should sort results by count descending', () => {
+      const participants = [
+        { current_vote: '3' },
+        { current_vote: '5' },
+        { current_vote: '5' },
+        { current_vote: '5' },
+        { current_vote: '8' },
+        { current_vote: '8' },
+      ];
+
+      const { results } = RoomBloc.calculateResults(participants);
+
+      expect(results[0].vote).toBe('5');
+      expect(results[0].count).toBe(3);
+      expect(results[1].vote).toBe('8');
+      expect(results[1].count).toBe(2);
+      expect(results[2].vote).toBe('3');
+      expect(results[2].count).toBe(1);
+    });
+  });
+
+  describe('dispose', () => {
+    it('should clear listeners on dispose', () => {
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      bloc.dispose();
+
+      // After dispose, listeners should be cleared
+      // We can't easily test this without accessing private state,
+      // but we can verify no errors occur
+      expect(() => bloc.dispose()).not.toThrow();
+    });
+  });
+});

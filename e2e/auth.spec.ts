@@ -4,8 +4,8 @@ test.describe('Authentication', () => {
   test('should show home page for unauthenticated users', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL('/');
-    await expect(page.locator('text=Story Poker')).toBeVisible();
-    await expect(page.locator('text=Get Started Free')).toBeVisible();
+    await expect(page.locator('text=Story Poker').first()).toBeVisible();
+    await expect(page.locator('button:has-text("Create Room")')).toBeVisible();
   });
 
   test('should redirect unauthenticated users from profile to login', async ({ page }) => {
