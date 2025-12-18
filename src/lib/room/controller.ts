@@ -179,12 +179,37 @@ export class RoomController {
 
   init(): void {
     this.bindEvents();
+    this.bindPromoteButtons();
     this.bloc.subscribe(this.handleBlocEvent.bind(this));
     this.bloc.startRealtimeSubscription();
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
       this.bloc.dispose();
+    });
+  }
+
+  private bindPromoteButtons(): void {
+    // Bind click handlers to server-rendered promote buttons
+    document.querySelectorAll('.promote-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const participantId = (btn as HTMLElement).dataset.participantId;
+        if (participantId) {
+          this.handlePromoteClick(participantId);
+        }
+      });
+    });
+
+    // Bind click handlers to server-rendered demote buttons
+    document.querySelectorAll('.demote-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const participantId = (btn as HTMLElement).dataset.participantId;
+        if (participantId) {
+          this.handleDemoteClick(participantId);
+        }
+      });
     });
   }
 
@@ -432,7 +457,7 @@ export class RoomController {
     const initialEl = el.querySelector('.participant-initial');
     if (initialEl) initialEl.textContent = participant.name.charAt(0).toUpperCase();
 
-    // Update role badge
+    // Update role badge and buttons
     const currentRole = el.getAttribute('data-participant-role');
     if (currentRole !== participant.role) {
       el.setAttribute('data-participant-role', participant.role);
@@ -447,6 +472,9 @@ export class RoomController {
       } else if (participant.role !== 'manager' && existingBadge) {
         existingBadge.remove();
       }
+
+      // Refresh buttons for this participant
+      this.refreshParticipantButtonsForElement(el as HTMLElement, participant);
     }
 
     // Update vote indicator
@@ -501,6 +529,7 @@ export class RoomController {
     const initial = participant.name.charAt(0).toUpperCase();
     const hasVote = !!participant.current_vote;
     const showVote = this.bloc.votingStatus === 'revealed' && participant.current_vote;
+    const canPromote = this.bloc.isManager && !isCurrentUser && participant.role !== 'manager';
 
     li.innerHTML = `
       <div class="relative flex-shrink-0">
@@ -516,9 +545,32 @@ export class RoomController {
         ${participant.role === 'manager' ? '<span class="text-xs text-indigo-400">Manager</span>' : ''}
       </div>
       ${isCurrentUser ? '<span class="text-xs text-slate-500">(you)</span>' : ''}
+      ${canPromote ? `
+        <button class="promote-btn p-1 text-slate-400 hover:text-indigo-400 transition-colors" title="Make manager" data-participant-id="${participant.id}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+        </button>
+      ` : ''}
     `;
 
+    // Add click handler for promote button
+    if (canPromote) {
+      const promoteBtn = li.querySelector('.promote-btn');
+      promoteBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.handlePromoteClick(participant.id);
+      });
+    }
+
     return li;
+  }
+
+  private async handlePromoteClick(participantId: string): Promise<void> {
+    const success = await this.bloc.promoteToManager(participantId);
+    if (!success) {
+      // Error already emitted by bloc
+    }
   }
 
   private updateParticipantCount(): void {
@@ -1022,16 +1074,102 @@ export class RoomController {
 
       // Update manager badge in "You" section
       const youSection = document.querySelector('.border-b.border-slate-800');
-      if (youSection && !youSection.querySelector('.text-indigo-400')) {
-        const roleSpan = document.createElement('span');
-        roleSpan.className = 'text-xs text-indigo-400';
-        roleSpan.textContent = 'Manager';
-        const nameContainer = youSection.querySelector('.flex-1');
-        nameContainer?.appendChild(roleSpan);
+      if (youSection && !youSection.querySelector('.bg-indigo-600\\/30')) {
+        const badgeContainer = youSection.querySelector('.flex.items-center.gap-2');
+        if (badgeContainer) {
+          const badge = document.createElement('span');
+          badge.className = 'text-xs bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded-full';
+          badge.textContent = 'Manager';
+          badgeContainer.appendChild(badge);
+        }
       }
+
+      // Add promote/demote buttons to participants
+      this.refreshParticipantButtons();
 
       // Update the correct manager control state based on current voting status
       this.updateVotingStatusUI(this.bloc.votingStatus);
+    } else {
+      // Hide manager controls
+      const managerControls = document.getElementById('manager-controls');
+      if (managerControls) {
+        managerControls.classList.add('hidden');
+      }
+
+      // Hide settings button
+      this.elements.openSettingsBtn?.classList.add('hidden');
+
+      // Remove manager badge from "You" section
+      const youSection = document.querySelector('.border-b.border-slate-800');
+      youSection?.querySelector('.bg-indigo-600\\/30')?.remove();
+
+      // Remove all promote/demote buttons
+      document.querySelectorAll('.promote-btn, .demote-btn').forEach(btn => btn.remove());
+    }
+  }
+
+  private refreshParticipantButtons(): void {
+    this.elements.participantsList?.querySelectorAll('li').forEach((li) => {
+      const participantId = li.getAttribute('data-participant-id');
+      const role = li.getAttribute('data-participant-role');
+      this.updateButtonsForParticipant(li as HTMLElement, participantId, role);
+    });
+  }
+
+  private refreshParticipantButtonsForElement(el: HTMLElement, participant: Participant): void {
+    this.updateButtonsForParticipant(el, participant.id, participant.role);
+  }
+
+  private updateButtonsForParticipant(li: HTMLElement, participantId: string | null, role: string | null): void {
+    const isCurrentUser = participantId === this.bloc.currentParticipantId;
+
+    // Remove existing buttons first
+    li.querySelector('.promote-btn')?.remove();
+    li.querySelector('.demote-btn')?.remove();
+
+    if (!this.bloc.isManager) return;
+
+    if (role === 'manager') {
+      // Add demote button for managers
+      const demoteBtn = document.createElement('button');
+      demoteBtn.className = 'demote-btn p-1 text-slate-400 hover:text-red-400 transition-colors';
+      demoteBtn.title = isCurrentUser ? 'Step down as manager' : 'Remove manager';
+      demoteBtn.dataset.participantId = participantId || '';
+      demoteBtn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      `;
+      demoteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (participantId) this.handleDemoteClick(participantId);
+      });
+      li.appendChild(demoteBtn);
+    } else {
+      // Add promote button for non-managers (except self)
+      if (!isCurrentUser) {
+        const promoteBtn = document.createElement('button');
+        promoteBtn.className = 'promote-btn p-1 text-slate-400 hover:text-indigo-400 transition-colors';
+        promoteBtn.title = 'Make manager';
+        promoteBtn.dataset.participantId = participantId || '';
+        promoteBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+        `;
+        promoteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (participantId) this.handlePromoteClick(participantId);
+        });
+        li.appendChild(promoteBtn);
+      }
+    }
+  }
+
+  private async handleDemoteClick(participantId: string): Promise<void> {
+    const success = await this.bloc.demoteFromManager(participantId);
+    if (!success) {
+      // Error already emitted by bloc
     }
   }
 }

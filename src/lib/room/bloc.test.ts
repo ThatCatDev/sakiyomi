@@ -12,6 +12,9 @@ vi.mock('./api', () => ({
   leaveRoom: vi.fn(),
   updateName: vi.fn(),
   toggleShowVotes: vi.fn(),
+  promoteToManager: vi.fn(),
+  demoteFromManager: vi.fn(),
+  updateRoomSettings: vi.fn(),
 }));
 
 // Mock Supabase client
@@ -34,6 +37,8 @@ describe('RoomBloc', () => {
   const mockApiLeaveRoom = vi.mocked(api.leaveRoom);
   const mockApiUpdateName = vi.mocked(api.updateName);
   const mockApiToggleShowVotes = vi.mocked(api.toggleShowVotes);
+  const mockApiPromoteToManager = vi.mocked(api.promoteToManager);
+  const mockApiDemoteFromManager = vi.mocked(api.demoteFromManager);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -322,6 +327,129 @@ describe('RoomBloc', () => {
 
       expect(result).toBe(true);
       expect(mockApiToggleShowVotes).toHaveBeenCalledWith('room-123');
+    });
+  });
+
+  describe('promoteToManager', () => {
+    it('should reject when not a manager', async () => {
+      bloc.isManager = false;
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.promoteToManager('participant-456');
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Only managers can promote participants',
+      });
+      expect(mockApiPromoteToManager).not.toHaveBeenCalled();
+    });
+
+    it('should promote participant when manager', async () => {
+      mockApiPromoteToManager.mockResolvedValueOnce({ success: true });
+
+      const result = await bloc.promoteToManager('participant-456');
+
+      expect(result).toBe(true);
+      expect(mockApiPromoteToManager).toHaveBeenCalledWith('room-123', 'participant-456');
+    });
+
+    it('should emit error on API failure', async () => {
+      mockApiPromoteToManager.mockResolvedValueOnce({ success: false, error: 'Participant not found' });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.promoteToManager('invalid-id');
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Participant not found',
+      });
+    });
+  });
+
+  describe('demoteFromManager', () => {
+    it('should reject when not a manager', async () => {
+      bloc.isManager = false;
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.demoteFromManager('participant-456');
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Only managers can demote participants',
+      });
+      expect(mockApiDemoteFromManager).not.toHaveBeenCalled();
+    });
+
+    it('should demote participant when manager', async () => {
+      mockApiDemoteFromManager.mockResolvedValueOnce({ success: true });
+
+      const result = await bloc.demoteFromManager('participant-456');
+
+      expect(result).toBe(true);
+      expect(mockApiDemoteFromManager).toHaveBeenCalledWith('room-123', 'participant-456');
+    });
+
+    it('should update local isManager state when demoting self', async () => {
+      mockApiDemoteFromManager.mockResolvedValueOnce({ success: true });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      // Demote self
+      const result = await bloc.demoteFromManager('participant-123');
+
+      expect(result).toBe(true);
+      expect(bloc.isManager).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'role_changed',
+        payload: { isManager: false },
+      });
+    });
+
+    it('should not update local isManager state when demoting others', async () => {
+      mockApiDemoteFromManager.mockResolvedValueOnce({ success: true });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      // Demote someone else
+      const result = await bloc.demoteFromManager('participant-456');
+
+      expect(result).toBe(true);
+      expect(bloc.isManager).toBe(true);
+      // Should not emit role_changed event
+      expect(listener).not.toHaveBeenCalledWith({
+        type: 'role_changed',
+        payload: expect.anything(),
+      });
+    });
+
+    it('should emit error when trying to demote last manager', async () => {
+      mockApiDemoteFromManager.mockResolvedValueOnce({
+        success: false,
+        error: 'Cannot demote the last manager. Promote someone else first.',
+      });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.demoteFromManager('participant-123');
+
+      expect(result).toBe(false);
+      expect(bloc.isManager).toBe(true); // Should not change
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Cannot demote the last manager. Promote someone else first.',
+      });
     });
   });
 

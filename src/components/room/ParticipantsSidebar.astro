@@ -87,6 +87,8 @@ const { currentParticipant, participants, votingStatus, isManager } = Astro.prop
           participant={p}
           isCurrentUser={currentParticipant?.id === p.id}
           votingStatus={votingStatus}
+          canPromote={isManager && currentParticipant?.id !== p.id && p.role !== 'manager'}
+          canDemote={isManager && p.role === 'manager'}
         />
       ))}
     </ul>

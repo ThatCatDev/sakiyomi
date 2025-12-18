@@ -460,4 +460,225 @@ test.describe('Manager Controls', () => {
     await context2.close();
     await context3.close();
   });
+
+  test('manager can promote another user to manager', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Original Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'Team Member');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Second user should NOT see manager controls initially
+    await expect(page2.locator('#manager-controls')).not.toBeVisible();
+
+    // Wait for realtime to sync participant list
+    await page.waitForTimeout(500);
+
+    // Manager clicks promote button for Team Member
+    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Team Member' });
+    await expect(participantItem).toBeVisible();
+    const promoteBtn = participantItem.locator('.promote-btn');
+    await expect(promoteBtn).toBeVisible();
+    await promoteBtn.click();
+
+    // Second user should now have manager controls
+    await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
+
+    // Second user should see Manager badge
+    await expect(page2.locator('text=Manager').first()).toBeVisible();
+
+    // Manager badge (text-indigo-400) should appear next to Team Member in the participants list
+    await expect(participantItem.locator('.text-indigo-400')).toBeVisible({ timeout: 5000 });
+
+    await context2.close();
+  });
+
+  test('manager can demote another manager', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Original Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'Second Manager');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Wait for realtime to sync
+    await page.waitForTimeout(500);
+
+    // First promote the second user
+    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Second Manager' });
+    await participantItem.locator('.promote-btn').click();
+
+    // Wait for promotion to complete
+    await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
+
+    // Now demote button should appear instead of promote button
+    await expect(participantItem.locator('.demote-btn')).toBeVisible({ timeout: 5000 });
+
+    // Click demote
+    await participantItem.locator('.demote-btn').click();
+
+    // Second user should lose manager controls
+    await expect(page2.locator('#manager-controls')).not.toBeVisible({ timeout: 10000 });
+
+    // Manager badge (text-indigo-400) should be removed from participant list
+    await expect(participantItem.locator('.text-indigo-400')).not.toBeVisible({ timeout: 5000 });
+
+    await context2.close();
+  });
+
+  test('manager can demote themselves', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Original Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'Team Member');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Wait for realtime sync
+    await page.waitForTimeout(500);
+
+    // First promote the second user so there are two managers
+    const teamMemberItem = page.locator('#participants-list li').filter({ hasText: 'Team Member' });
+    await teamMemberItem.locator('.promote-btn').click();
+    await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
+
+    // Now original manager can demote themselves
+    // Find own participant item (has "(you)" text)
+    const ownItem = page.locator('#participants-list li').filter({ hasText: '(you)' });
+    await expect(ownItem.locator('.demote-btn')).toBeVisible({ timeout: 5000 });
+    await ownItem.locator('.demote-btn').click();
+
+    // Original manager should lose manager controls
+    await expect(page.locator('#manager-controls')).not.toBeVisible({ timeout: 10000 });
+
+    // Manager badge should be removed from "You" section
+    const youSection = page.locator('.border-b.border-slate-800').first();
+    await expect(youSection.locator('.bg-indigo-600\\/30')).not.toBeVisible({ timeout: 5000 });
+
+    await context2.close();
+  });
+
+  test('cannot demote the last manager', async ({ page }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+
+    await page.fill('input[name="name"]', 'Solo Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Find own participant item
+    const ownItem = page.locator('#participants-list li').filter({ hasText: '(you)' });
+
+    // Demote button should be visible (manager can try to demote themselves)
+    await expect(ownItem.locator('.demote-btn')).toBeVisible();
+
+    // Handle the alert dialog
+    page.on('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Cannot demote the last manager');
+      await dialog.accept();
+    });
+
+    // Click demote
+    await ownItem.locator('.demote-btn').click();
+
+    // Wait for error alert
+    await page.waitForTimeout(500);
+
+    // Manager should still have manager controls (demotion failed)
+    await expect(page.locator('#manager-controls')).toBeVisible();
+  });
+
+  test('promoted user sees promote/demote buttons for other participants', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Original Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'New Manager');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Third user joins
+    const context3 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page3 = await context3.newPage();
+    await page3.goto(roomUrl);
+
+    await page3.fill('input[name="name"]', 'Team Member');
+    await page3.click('button:has-text("Join Room")');
+    await expect(page3.locator('#vote-cards-section')).toBeVisible();
+
+    // Wait for realtime sync
+    await page.waitForTimeout(500);
+
+    // Second user should NOT see any promote buttons (not a manager yet)
+    await expect(page2.locator('.promote-btn')).not.toBeVisible();
+
+    // Promote second user
+    const newManagerItem = page.locator('#participants-list li').filter({ hasText: 'New Manager' });
+    await newManagerItem.locator('.promote-btn').click();
+
+    // Wait for promotion
+    await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
+
+    // Now second user should see promote buttons for third user
+    await page2.waitForTimeout(500);
+    const teamMemberItemPage2 = page2.locator('#participants-list li').filter({ hasText: 'Team Member' });
+    await expect(teamMemberItemPage2.locator('.promote-btn')).toBeVisible({ timeout: 5000 });
+
+    // And demote button for the original manager
+    const originalManagerItemPage2 = page2.locator('#participants-list li').filter({ hasText: 'Original Manager' });
+    await expect(originalManagerItemPage2.locator('.demote-btn')).toBeVisible({ timeout: 5000 });
+
+    await context2.close();
+    await context3.close();
+  });
 });

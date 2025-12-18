@@ -113,6 +113,15 @@ export class RoomBloc {
                 payload: { isManager: true },
               });
             }
+
+            // Check if role changed from manager (demoted)
+            if (participant.role === 'member' && this.isManager) {
+              this.isManager = false;
+              this.emit({
+                type: 'role_changed',
+                payload: { isManager: false },
+              });
+            }
           }
 
           this.emit({
@@ -336,6 +345,44 @@ export class RoomBloc {
     if (!result.success) {
       this.emit({ type: 'error', payload: result.error });
       return false;
+    }
+
+    return true;
+  }
+
+  async promoteToManager(participantId: string): Promise<boolean> {
+    if (!this.isManager) {
+      this.emit({ type: 'error', payload: 'Only managers can promote participants' });
+      return false;
+    }
+
+    const result = await api.promoteToManager(this.roomId, participantId);
+
+    if (!result.success) {
+      this.emit({ type: 'error', payload: result.error });
+      return false;
+    }
+
+    return true;
+  }
+
+  async demoteFromManager(participantId: string): Promise<boolean> {
+    if (!this.isManager) {
+      this.emit({ type: 'error', payload: 'Only managers can demote participants' });
+      return false;
+    }
+
+    const result = await api.demoteFromManager(this.roomId, participantId);
+
+    if (!result.success) {
+      this.emit({ type: 'error', payload: result.error });
+      return false;
+    }
+
+    // If demoting self, update local state
+    if (participantId === this.currentParticipantId) {
+      this.isManager = false;
+      this.emit({ type: 'role_changed', payload: { isManager: false } });
     }
 
     return true;

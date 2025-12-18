@@ -209,4 +209,148 @@ describe('Room API', () => {
       );
     });
   });
+
+  describe('promoteToManager', () => {
+    it('should promote participant to manager successfully', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true }),
+      });
+
+      const result = await api.promoteToManager('room-123', 'participant-456');
+
+      expect(result.success).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/rooms/room-123/promote',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ participantId: 'participant-456' }),
+        })
+      );
+    });
+
+    it('should return error when not a manager', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Only managers can promote participants' }),
+      });
+
+      const result = await api.promoteToManager('room-123', 'participant-456');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Only managers can promote participants');
+    });
+
+    it('should return error when participant not found', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Participant not found' }),
+      });
+
+      const result = await api.promoteToManager('room-123', 'invalid-id');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Participant not found');
+    });
+
+    it('should return error when participant is already a manager', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Participant is already a manager' }),
+      });
+
+      const result = await api.promoteToManager('room-123', 'manager-id');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Participant is already a manager');
+    });
+
+    it('should handle network errors', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await api.promoteToManager('room-123', 'participant-456');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Network error');
+    });
+  });
+
+  describe('demoteFromManager', () => {
+    it('should demote manager to member successfully', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true }),
+      });
+
+      const result = await api.demoteFromManager('room-123', 'participant-456');
+
+      expect(result.success).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/rooms/room-123/demote',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ participantId: 'participant-456' }),
+        })
+      );
+    });
+
+    it('should return error when not a manager', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Only managers can demote participants' }),
+      });
+
+      const result = await api.demoteFromManager('room-123', 'participant-456');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Only managers can demote participants');
+    });
+
+    it('should return error when participant not found', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Participant not found' }),
+      });
+
+      const result = await api.demoteFromManager('room-123', 'invalid-id');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Participant not found');
+    });
+
+    it('should return error when participant is not a manager', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Participant is not a manager' }),
+      });
+
+      const result = await api.demoteFromManager('room-123', 'member-id');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Participant is not a manager');
+    });
+
+    it('should return error when trying to demote the last manager', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Cannot demote the last manager. Promote someone else first.' }),
+      });
+
+      const result = await api.demoteFromManager('room-123', 'last-manager-id');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Cannot demote the last manager. Promote someone else first.');
+    });
+
+    it('should handle network errors', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await api.demoteFromManager('room-123', 'participant-456');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Network error');
+    });
+  });
 });

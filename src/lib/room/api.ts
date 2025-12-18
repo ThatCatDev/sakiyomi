@@ -212,3 +212,49 @@ export async function updateRoomSettings(
     return { success: false, error: 'Network error' };
   }
 }
+
+export async function promoteToManager(roomId: string, participantId: string): Promise<ApiResponse> {
+  try {
+    const response = await fetch(`/api/rooms/${roomId}/promote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ participantId }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: result.error || 'Failed to promote participant' };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('Failed to promote participant:', err);
+    return { success: false, error: 'Network error' };
+  }
+}
+
+export async function demoteFromManager(roomId: string, participantId: string): Promise<ApiResponse> {
+  try {
+    const response = await fetch(`/api/rooms/${roomId}/demote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ participantId }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: result.error || 'Failed to demote participant' };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('Failed to demote participant:', err);
+    return { success: false, error: 'Network error' };
+  }
+}

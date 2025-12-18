@@ -148,7 +148,7 @@ const voteOptions = room.vote_options || ['0', '1', '2', '3', '5', '8', '13', '2
             </div>
 
             <!-- Manager Controls -->
-            {isManager && <ManagerControls votingStatus={votingStatus} />}
+            <ManagerControls votingStatus={votingStatus} isManager={isManager} />
 
             <!-- Status Banner -->
             <StatusBanner votingStatus={votingStatus} />

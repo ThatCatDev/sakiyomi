@@ -5,9 +5,11 @@ interface Props {
   participant: Participant;
   isCurrentUser: boolean;
   votingStatus: VotingStatus;
+  canPromote?: boolean;
+  canDemote?: boolean;
 }
 
-const { participant, isCurrentUser, votingStatus } = Astro.props;
+const { participant, isCurrentUser, votingStatus, canPromote = false, canDemote = false } = Astro.props;
 
 const initial = participant.name.charAt(0).toUpperCase();
 const hasVote = !!participant.current_vote;
@@ -55,5 +57,29 @@ const showVoteValue = votingStatus === 'revealed' && participant.current_vote;
 
   {isCurrentUser && (
     <span class="text-xs text-slate-500">(you)</span>
+  )}
+
+  {canPromote && (
+    <button
+      class="promote-btn p-1 text-slate-400 hover:text-indigo-400 transition-colors"
+      title="Make manager"
+      data-participant-id={participant.id}
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+      </svg>
+    </button>
+  )}
+
+  {canDemote && (
+    <button
+      class="demote-btn p-1 text-slate-400 hover:text-red-400 transition-colors"
+      title={isCurrentUser ? "Step down as manager" : "Remove manager"}
+      data-participant-id={participant.id}
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
   )}
 </li>
