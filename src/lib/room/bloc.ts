@@ -19,6 +19,7 @@ export type RoomEventType =
   | 'role_changed'
   | 'vote_submitted'
   | 'kicked'
+  | 'presence_changed'
   | 'error';
 
 export interface RoomEvent {
@@ -32,7 +33,9 @@ export class RoomBloc {
   private supabase: SupabaseClient;
   private participantsChannel: RealtimeChannel | null = null;
   private roomChannel: RealtimeChannel | null = null;
+  private presenceChannel: RealtimeChannel | null = null;
   private listeners: Set<EventCallback> = new Set();
+  public onlineUserIds: Set<string> = new Set();
 
   // State
   public roomId: string;
@@ -238,6 +241,37 @@ export class RoomBloc {
       .subscribe((status) => {
         console.log('[RoomBloc] Room channel subscription status:', status);
       });
+
+    // Subscribe to presence for online status
+    this.presenceChannel = this.supabase
+      .channel(`presence:${this.roomId}`)
+      .on('presence', { event: 'sync' }, () => {
+        const state = this.presenceChannel?.presenceState() ?? {};
+        const onlineIds = new Set<string>();
+
+        Object.values(state).forEach((presences) => {
+          (presences as unknown as { participantId: string }[]).forEach((presence) => {
+            if (presence.participantId) {
+              onlineIds.add(presence.participantId);
+            }
+          });
+        });
+
+        this.onlineUserIds = onlineIds;
+        this.emit({
+          type: 'presence_changed',
+          payload: Array.from(onlineIds),
+        });
+      })
+      .subscribe(async (status) => {
+        console.log('[RoomBloc] Presence channel status:', status);
+        if (status === 'SUBSCRIBED' && this.currentParticipantId) {
+          await this.presenceChannel?.track({
+            participantId: this.currentParticipantId,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
   }
 
   stopRealtimeSubscription(): void {
@@ -248,6 +282,10 @@ export class RoomBloc {
     if (this.roomChannel) {
       this.supabase.removeChannel(this.roomChannel);
       this.roomChannel = null;
+    }
+    if (this.presenceChannel) {
+      this.supabase.removeChannel(this.presenceChannel);
+      this.presenceChannel = null;
     }
   }
 

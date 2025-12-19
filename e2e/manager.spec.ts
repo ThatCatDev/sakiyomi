@@ -277,15 +277,18 @@ test.describe('Manager Controls', () => {
     await page.click('#start-voting-btn');
     await expect(page.locator('#status-voting')).toBeVisible({ timeout: 10000 });
 
-    // Vote indicator should show "?" before voting
+    // Vote indicator should show "-" before voting (no vote yet)
     const voteIndicator = page.locator('#participants-list .vote-indicator').first();
-    await expect(voteIndicator).toContainText('?');
+    await expect(voteIndicator).toContainText('-');
+
+    // Wait for vote cards to be enabled
+    await expect(page.locator('.vote-card[data-vote="5"]')).toBeEnabled({ timeout: 10000 });
 
     // Cast a vote
     await page.click('.vote-card[data-vote="5"]');
 
-    // Vote indicator should now show checkmark (or update)
-    await expect(voteIndicator.locator('svg')).toBeVisible({ timeout: 5000 });
+    // Vote indicator should now show the vote value (manager sees actual votes)
+    await expect(voteIndicator).toContainText('5', { timeout: 5000 });
   });
 
   test('manager can toggle show votes setting in settings modal', async ({ page }) => {
@@ -312,14 +315,14 @@ test.describe('Manager Controls', () => {
     await expect(toggle).toBeChecked({ timeout: 5000 });
 
     // Description should update
-    await expect(page.locator('#settings-show-votes-description')).toContainText('All participants can see who voted what');
+    await expect(page.locator('#settings-show-votes-description')).toContainText('Vote indicators visible in sidebar');
 
     // Close modal using the Modal component's close button
     await page.click('#settings-modal .close-modal-btn');
     await expect(page.locator('#settings-modal')).toBeHidden();
   });
 
-  test('manager always sees who voted what after reveal', async ({ page }) => {
+  test('manager always sees vote values in sidebar', async ({ page }) => {
     await page.goto('/');
 
     // Create and join room
@@ -328,19 +331,16 @@ test.describe('Manager Controls', () => {
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#manager-controls')).toBeVisible();
 
-    // DO NOT enable show votes - manager should still see
+    // DO NOT enable show votes - manager should still see vote values
 
     // Start voting and vote
     await page.click('#start-voting-btn');
     await expect(page.locator('#status-voting')).toBeVisible({ timeout: 10000 });
     await page.click('.vote-card[data-vote="8"]');
 
-    // Reveal votes
-    await page.click('#reveal-votes-btn');
-    await expect(page.locator('#status-revealed')).toBeVisible({ timeout: 10000 });
-
-    // Manager should still see vote next to participant name
-    await expect(page.locator('.vote-display')).toContainText('voted 8');
+    // Manager should see vote value in the vote indicator (not just checkmark)
+    const voteIndicator = page.locator('#participants-list .vote-indicator').first();
+    await expect(voteIndicator).toContainText('8', { timeout: 5000 });
   });
 
   test('settings modal show votes toggle changes description text', async ({ page }) => {
@@ -356,22 +356,137 @@ test.describe('Manager Controls', () => {
     await page.click('#open-settings-btn');
     await expect(page.locator('#settings-modal')).toBeVisible();
 
-    // Initial state - votes are anonymous
-    await expect(page.locator('#settings-show-votes-description')).toContainText('Votes are shown anonymously');
+    // Initial state - vote indicators hidden
+    await expect(page.locator('#settings-show-votes-description')).toContainText('Vote indicators hidden in sidebar');
 
     // Enable show votes
     await page.locator('label:has(#settings-show-votes)').click();
     await expect(page.locator('#settings-show-votes')).toBeChecked({ timeout: 5000 });
 
     // Description should update
-    await expect(page.locator('#settings-show-votes-description')).toContainText('All participants can see who voted what');
+    await expect(page.locator('#settings-show-votes-description')).toContainText('Vote indicators visible in sidebar');
 
     // Toggle back
     await page.locator('label:has(#settings-show-votes)').click();
     await expect(page.locator('#settings-show-votes')).not.toBeChecked({ timeout: 5000 });
 
     // Description should revert
-    await expect(page.locator('#settings-show-votes-description')).toContainText('Votes are shown anonymously');
+    await expect(page.locator('#settings-show-votes-description')).toContainText('Vote indicators hidden in sidebar');
+  });
+
+  test('non-manager does not see vote indicators when toggle is off', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Room Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins as non-manager
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'Team Member');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Start voting
+    await page.click('#start-voting-btn');
+    await expect(page.locator('#status-voting')).toBeVisible({ timeout: 10000 });
+    await expect(page2.locator('#status-voting')).toBeVisible({ timeout: 10000 });
+
+    // Non-manager should NOT see vote indicators (showVotes is off by default)
+    await expect(page2.locator('#participants-list .vote-indicator').first()).toHaveClass(/hidden/, { timeout: 5000 });
+
+    // Manager should still see vote indicators
+    await expect(page.locator('#participants-list .vote-indicator').first()).toBeVisible();
+
+    await context2.close();
+  });
+
+  test('non-manager sees vote indicators when toggle is enabled', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Room Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Enable show votes in settings
+    await page.click('#open-settings-btn');
+    await expect(page.locator('#settings-modal')).toBeVisible();
+    await page.locator('label:has(#settings-show-votes)').click();
+    await expect(page.locator('#settings-show-votes')).toBeChecked({ timeout: 5000 });
+    await page.click('#save-settings-btn');
+    await expect(page.locator('#settings-modal')).toBeHidden({ timeout: 5000 });
+
+    // Second user joins as non-manager
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'Team Member');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Start voting
+    await page.click('#start-voting-btn');
+    await expect(page.locator('#status-voting')).toBeVisible({ timeout: 10000 });
+    await expect(page2.locator('#status-voting')).toBeVisible({ timeout: 10000 });
+
+    // Non-manager should now see vote indicators (showVotes is on)
+    await expect(page2.locator('#participants-list .vote-indicator').first()).toBeVisible();
+    await expect(page2.locator('#participants-list .vote-indicator').first()).not.toHaveClass(/hidden/);
+
+    await context2.close();
+  });
+
+  test('toggling show votes updates sidebar in real-time for non-managers', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Room Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins as non-manager
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'Team Member');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Start voting
+    await page.click('#start-voting-btn');
+    await expect(page.locator('#status-voting')).toBeVisible({ timeout: 10000 });
+    await expect(page2.locator('#status-voting')).toBeVisible({ timeout: 10000 });
+
+    // Non-manager should NOT see vote indicators initially
+    await expect(page2.locator('#participants-list .vote-indicator').first()).toHaveClass(/hidden/, { timeout: 5000 });
+
+    // Manager enables show votes
+    await page.click('#open-settings-btn');
+    await expect(page.locator('#settings-modal')).toBeVisible();
+    await page.locator('label:has(#settings-show-votes)').click();
+    await page.click('#save-settings-btn');
+    await expect(page.locator('#settings-modal')).toBeHidden({ timeout: 5000 });
+
+    // Non-manager should now see vote indicators (real-time update)
+    await expect(page2.locator('#participants-list .vote-indicator').first()).not.toHaveClass(/hidden/, { timeout: 10000 });
+
+    await context2.close();
   });
 
   test('manager role should transfer to another user when manager leaves', async ({ page, browser }) => {
@@ -580,8 +695,8 @@ test.describe('Manager Controls', () => {
     await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
 
     // Now original manager can demote themselves
-    // Find own participant item (has "(you)" text)
-    const ownItem = page.locator('#participants-list li').filter({ hasText: '(you)' });
+    // Find own participant item (has current-user-indicator star)
+    const ownItem = page.locator('#participants-list li:has(.current-user-indicator)');
     await expect(ownItem.locator('.demote-btn')).toBeVisible({ timeout: 5000 });
     await ownItem.locator('.demote-btn').click();
 
@@ -605,8 +720,8 @@ test.describe('Manager Controls', () => {
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#manager-controls')).toBeVisible();
 
-    // Find own participant item
-    const ownItem = page.locator('#participants-list li').filter({ hasText: '(you)' });
+    // Find own participant item (has current-user-indicator star)
+    const ownItem = page.locator('#participants-list li:has(.current-user-indicator)');
 
     // Demote button should be visible (manager can try to demote themselves)
     await expect(ownItem.locator('.demote-btn')).toBeVisible();
@@ -747,8 +862,8 @@ test.describe('Manager Controls', () => {
     await page.click('button:has-text("Join Room")');
     await expect(page.locator('#manager-controls')).toBeVisible();
 
-    // Find own participant item
-    const ownItem = page.locator('#participants-list li').filter({ hasText: '(you)' });
+    // Find own participant item (has current-user-indicator star)
+    const ownItem = page.locator('#participants-list li:has(.current-user-indicator)');
 
     // Kick button should NOT be visible for self
     await expect(ownItem.locator('.kick-btn')).not.toBeVisible();

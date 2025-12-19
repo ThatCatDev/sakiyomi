@@ -7,9 +7,10 @@ interface Props {
   participants: Participant[];
   votingStatus: VotingStatus;
   isManager: boolean;
+  showVotes: boolean;
 }
 
-const { currentParticipant, participants, votingStatus, isManager } = Astro.props;
+const { currentParticipant, participants, votingStatus, isManager, showVotes } = Astro.props;
 ---
 
 <div class="w-72 border-l border-slate-800 bg-slate-900/50 flex flex-col flex-shrink-0 hidden lg:flex">
@@ -90,6 +91,8 @@ const { currentParticipant, participants, votingStatus, isManager } = Astro.prop
           canPromote={isManager && currentParticipant?.id !== p.id && p.role !== 'manager'}
           canDemote={isManager && p.role === 'manager'}
           canKick={isManager && currentParticipant?.id !== p.id}
+          isViewerManager={isManager}
+          showVotes={showVotes}
         />
       ))}
     </ul>

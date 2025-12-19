@@ -196,6 +196,9 @@ export class RoomController {
     this.bloc.subscribe(this.handleBlocEvent.bind(this));
     this.bloc.startRealtimeSubscription();
 
+    // Apply initial showVotes setting (manager always sees, others based on setting)
+    this.toggleVoteIndicatorsVisibility(this.bloc.isManager || this.bloc.showVotes);
+
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
       this.bloc.dispose();
@@ -279,8 +282,8 @@ export class RoomController {
       const checked = this.elements.settingsShowVotes?.checked ?? false;
       if (this.elements.settingsShowVotesDescription) {
         this.elements.settingsShowVotesDescription.textContent = checked
-          ? 'All participants can see who voted what'
-          : 'Votes are shown anonymously';
+          ? 'Vote indicators visible in sidebar'
+          : 'Vote indicators hidden in sidebar';
       }
     });
 
@@ -341,7 +344,6 @@ export class RoomController {
         break;
       case 'vote_submitted':
         this.updateVoteCardSelection(event.payload as string);
-        // Also update own vote indicator immediately (don't wait for realtime)
         this.updateOwnVoteIndicator(event.payload as string);
         break;
       case 'show_votes_changed':
@@ -359,6 +361,9 @@ export class RoomController {
       case 'kicked':
         this.handleKicked();
         break;
+      case 'presence_changed':
+        this.updatePresenceUI(event.payload as string[]);
+        break;
       case 'error':
         this.showError(event.payload as string);
         break;
@@ -368,6 +373,72 @@ export class RoomController {
   private handleKicked(): void {
     alert('You have been removed from this room by a manager.');
     window.location.reload();
+  }
+
+  private updatePresenceUI(onlineIds: string[]): void {
+    const onlineSet = new Set(onlineIds);
+
+    this.elements.participantsList?.querySelectorAll('li').forEach((li) => {
+      const participantId = li.getAttribute('data-participant-id');
+      if (!participantId) return;
+
+      const isOnline = onlineSet.has(participantId);
+      const wasOnline = li.getAttribute('data-is-online') === 'true';
+
+      if (isOnline === wasOnline) return; // No change
+
+      li.setAttribute('data-is-online', isOnline ? 'true' : 'false');
+
+      // Update opacity
+      if (isOnline) {
+        li.classList.remove('opacity-50');
+      } else {
+        li.classList.add('opacity-50');
+      }
+
+      // Update avatar styling
+      const avatarContainer = li.querySelector('.relative.flex-shrink-0 > div:first-child');
+      if (avatarContainer) {
+        if (isOnline) {
+          avatarContainer.classList.remove('bg-slate-600');
+          avatarContainer.classList.add('bg-indigo-600/80');
+        } else {
+          avatarContainer.classList.remove('bg-indigo-600/80');
+          avatarContainer.classList.add('bg-slate-600');
+        }
+
+        // Update initial text color
+        const initialEl = avatarContainer.querySelector('.participant-initial');
+        if (initialEl) {
+          if (isOnline) {
+            initialEl.classList.remove('text-slate-400');
+            initialEl.classList.add('text-white');
+          } else {
+            initialEl.classList.remove('text-white');
+            initialEl.classList.add('text-slate-400');
+          }
+        }
+      }
+
+      // Update online indicator
+      const indicator = li.querySelector('.online-indicator') as HTMLElement;
+      if (indicator) {
+        indicator.setAttribute('data-is-online', isOnline ? 'true' : 'false');
+        if (isOnline) {
+          indicator.classList.remove('bg-slate-700');
+          indicator.classList.add('bg-green-500');
+          indicator.innerHTML = '<span></span>';
+        } else {
+          indicator.classList.remove('bg-green-500');
+          indicator.classList.add('bg-slate-700');
+          indicator.innerHTML = `
+            <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M18.364 5.636a9 9 0 11-12.728 0M12 9v4" />
+            </svg>
+          `;
+        }
+      }
+    });
   }
 
   // UI Update methods
@@ -400,22 +471,36 @@ export class RoomController {
 
     // Handle state transitions
     if (status === 'voting') {
-      this.clearVoteIndicators();
       this.clearVoteCardSelection();
+      this.clearVoteIndicators();
       if (this.elements.yourVoteDisplay) this.elements.yourVoteDisplay.textContent = '-';
     }
 
     if (status === 'revealed') {
       this.revealAllVotes();
       this.calculateAndShowResults();
-      // Manager always sees who voted what, others only if showVotes is enabled
-      if (this.bloc.isManager || this.bloc.showVotes) {
-        this.updateParticipantVoteDisplay(true);
-      }
-    } else {
-      // Clear vote display when not revealed
-      this.updateParticipantVoteDisplay(false);
     }
+  }
+
+  private clearVoteIndicators(): void {
+    this.elements.participantsList?.querySelectorAll('.vote-indicator').forEach((indicator) => {
+      const el = indicator as HTMLElement;
+      el.dataset.hasVote = 'false';
+      el.dataset.vote = '';
+      el.className = 'vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 bg-slate-700/50 text-slate-500';
+      el.innerHTML = '<span>-</span>';
+    });
+  }
+
+  private revealAllVotes(): void {
+    this.elements.participantsList?.querySelectorAll('.vote-indicator').forEach((indicator) => {
+      const el = indicator as HTMLElement;
+      const vote = el.dataset.vote;
+      if (vote) {
+        el.className = 'vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 bg-indigo-600/30 text-indigo-300';
+        el.innerHTML = `<span class="vote-value">${vote}</span>`;
+      }
+    });
   }
 
   private updateTopicUI(topic: string): void {
@@ -446,25 +531,6 @@ export class RoomController {
     });
   }
 
-  private clearVoteIndicators(): void {
-    this.elements.participantsList?.querySelectorAll('.vote-indicator').forEach((indicator) => {
-      const el = indicator as HTMLElement;
-      el.dataset.hasVote = 'false';
-      el.dataset.vote = '';
-      el.className = 'absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] font-bold vote-indicator bg-slate-600 text-slate-400';
-      el.innerHTML = '<span>?</span>';
-    });
-  }
-
-  private revealAllVotes(): void {
-    this.elements.participantsList?.querySelectorAll('.vote-indicator').forEach((indicator) => {
-      const el = indicator as HTMLElement;
-      const vote = el.dataset.vote;
-      if (vote) {
-        el.innerHTML = `<span class="vote-value">${vote}</span>`;
-      }
-    });
-  }
 
   private addParticipantToList(participant: Participant): void {
     if (this.elements.participantsList?.querySelector(`[data-participant-id="${participant.id}"]`)) {
@@ -526,21 +592,31 @@ export class RoomController {
     const indicator = participantEl.querySelector('.vote-indicator') as HTMLElement;
     if (!indicator) return;
 
-    indicator.dataset.hasVote = vote ? 'true' : 'false';
-    indicator.dataset.vote = vote || '';
-    indicator.className = `absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] font-bold vote-indicator ${vote ? 'bg-green-500 text-white' : 'bg-slate-600 text-slate-400'}`;
+    const hasVoted = !!vote;
+    const showVoteValue = (this.bloc.isManager || this.bloc.votingStatus === 'revealed') && vote;
 
-    if (this.bloc.votingStatus === 'revealed' && vote) {
+    indicator.dataset.hasVote = hasVoted ? 'true' : 'false';
+    indicator.dataset.vote = vote || '';
+
+    // Update classes
+    indicator.className = 'vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 ' +
+      (showVoteValue
+        ? 'bg-indigo-600/30 text-indigo-300'
+        : hasVoted
+          ? 'bg-green-600/30 text-green-400'
+          : 'bg-slate-700/50 text-slate-500');
+
+    // Update content
+    if (showVoteValue) {
       indicator.innerHTML = `<span class="vote-value">${vote}</span>`;
-    } else if (vote) {
-      indicator.innerHTML = `<svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
+    } else if (hasVoted) {
+      indicator.innerHTML = '<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>';
     } else {
-      indicator.innerHTML = `<span>?</span>`;
+      indicator.innerHTML = '<span>-</span>';
     }
   }
 
   private updateOwnVoteIndicator(vote: string): void {
-    // Find the current user's participant element and update their vote indicator
     const currentParticipantId = this.bloc.currentParticipantId;
     if (!currentParticipantId) return;
 
@@ -548,62 +624,91 @@ export class RoomController {
     if (!el) return;
 
     this.updateVoteIndicator(el, vote);
-
-    // Also update the "Your vote" display
-    if (this.elements.yourVoteDisplay) {
-      this.elements.yourVoteDisplay.textContent = vote || '-';
-    }
   }
+
 
   private createParticipantElement(participant: Participant, animate = false): HTMLElement {
     const li = document.createElement('li');
-    li.className = `flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50${animate ? ' participant-enter' : ''}`;
+    // New participants are assumed online since they just joined
+    const isOnline = this.bloc.onlineUserIds.has(participant.id);
+    li.className = `flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50${animate ? ' participant-enter' : ''}${!isOnline ? ' opacity-50' : ''}`;
     li.dataset.participantId = participant.id;
     li.dataset.participantRole = participant.role;
+    li.setAttribute('data-is-online', isOnline ? 'true' : 'false');
 
     const isCurrentUser = participant.id === this.bloc.currentParticipantId;
     const initial = participant.name.charAt(0).toUpperCase();
-    const hasVote = !!participant.current_vote;
-    const showVote = this.bloc.votingStatus === 'revealed' && participant.current_vote;
     const canPromote = this.bloc.isManager && !isCurrentUser && participant.role !== 'manager';
     const canDemote = this.bloc.isManager && participant.role === 'manager';
     const canKick = this.bloc.isManager && !isCurrentUser;
 
+    // Vote indicator logic - managers see actual votes, others see checkmark
+    const hasVoted = !!participant.current_vote;
+    const showVoteValue = (this.bloc.isManager || this.bloc.votingStatus === 'revealed') && participant.current_vote;
+    const shouldHideVoteIndicator = !this.bloc.isManager && !this.bloc.showVotes;
+    const voteIndicatorClass = showVoteValue
+      ? 'bg-indigo-600/30 text-indigo-300'
+      : hasVoted
+        ? 'bg-green-600/30 text-green-400'
+        : 'bg-slate-700/50 text-slate-500';
+    const voteIndicatorContent = showVoteValue
+      ? `<span class="vote-value">${participant.current_vote}</span>`
+      : hasVoted
+        ? '<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>'
+        : '<span>-</span>';
+
     li.innerHTML = `
       <div class="relative flex-shrink-0">
-        <div class="w-8 h-8 bg-indigo-600/80 rounded-full flex items-center justify-center">
-          <span class="text-white text-sm font-medium participant-initial">${initial}</span>
+        <div class="w-8 h-8 ${isOnline ? 'bg-indigo-600/80' : 'bg-slate-600'} rounded-full flex items-center justify-center">
+          <span class="${isOnline ? 'text-white' : 'text-slate-400'} text-sm font-medium participant-initial">${initial}</span>
         </div>
-        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] font-bold vote-indicator ${hasVote ? 'bg-green-500 text-white' : 'bg-slate-600 text-slate-400'}" data-has-vote="${hasVote}" data-vote="${participant.current_vote || ''}">
-          ${showVote ? `<span class="vote-value">${participant.current_vote}</span>` : hasVote ? '<svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>' : '<span>?</span>'}
+        ${isCurrentUser ? `
+          <div class="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full border-2 border-slate-900 flex items-center justify-center current-user-indicator">
+            <svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          </div>
+        ` : ''}
+        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 flex items-center justify-center online-indicator ${isOnline ? 'bg-green-500' : 'bg-slate-700'}" data-is-online="${isOnline}">
+          ${isOnline ? '<span></span>' : `
+            <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M18.364 5.636a9 9 0 11-12.728 0M12 9v4" />
+            </svg>
+          `}
         </div>
       </div>
       <div class="flex-1 min-w-0">
         <span class="text-white text-sm truncate block participant-name">${participant.name}</span>
         ${participant.role === 'manager' ? '<span class="text-xs text-indigo-400">Manager</span>' : ''}
       </div>
-      ${isCurrentUser ? '<span class="text-xs text-slate-500">(you)</span>' : ''}
-      ${canPromote ? `
-        <button class="promote-btn p-1 text-slate-400 hover:text-indigo-400 transition-colors" title="Make manager" data-participant-id="${participant.id}">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-          </svg>
-        </button>
-      ` : ''}
-      ${canDemote ? `
-        <button class="demote-btn p-1 text-slate-400 hover:text-red-400 transition-colors" title="${isCurrentUser ? 'Step down as manager' : 'Remove manager'}" data-participant-id="${participant.id}">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-      ` : ''}
-      ${canKick ? `
-        <button class="kick-btn p-1 text-slate-400 hover:text-red-400 transition-colors" title="Remove from room" data-participant-id="${participant.id}">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      ` : ''}
+      <div class="vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 ${voteIndicatorClass}${shouldHideVoteIndicator ? ' hidden' : ''}" data-has-vote="${hasVoted}" data-vote="${participant.current_vote || ''}">
+        ${voteIndicatorContent}
+      </div>
+      <div class="w-6 flex items-center justify-center flex-shrink-0 promote-demote-slot">
+        ${canPromote ? `
+          <button class="promote-btn p-1 text-slate-400 hover:text-indigo-400 transition-colors" title="Make manager" data-participant-id="${participant.id}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+          </button>
+        ` : ''}
+        ${canDemote ? `
+          <button class="demote-btn p-1 text-slate-400 hover:text-red-400 transition-colors" title="${isCurrentUser ? 'Step down as manager' : 'Remove manager'}" data-participant-id="${participant.id}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        ` : ''}
+      </div>
+      <div class="w-6 flex items-center justify-center flex-shrink-0 kick-slot">
+        ${canKick ? `
+          <button class="kick-btn p-1 text-slate-400 hover:text-red-400 transition-colors" title="Remove from room" data-participant-id="${participant.id}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        ` : ''}
+      </div>
     `;
 
     // Add click handlers
@@ -864,43 +969,21 @@ export class RoomController {
     // Update description text
     if (this.elements.showVotesDescription) {
       this.elements.showVotesDescription.textContent = showVotes
-        ? 'All participants can see who voted what'
-        : 'Votes are shown anonymously';
+        ? 'Vote indicators visible in sidebar'
+        : 'Vote indicators hidden in sidebar';
     }
 
-    // Update vote display in participant list based on current voting status
+    // Toggle visibility of vote indicator boxes in sidebar
     // Manager always sees votes, others only if showVotes is enabled
-    if (this.bloc.votingStatus === 'revealed') {
-      this.updateParticipantVoteDisplay(this.bloc.isManager || showVotes);
-    }
+    this.toggleVoteIndicatorsVisibility(this.bloc.isManager || showVotes);
   }
 
-  private updateParticipantVoteDisplay(showVotes: boolean): void {
-    this.elements.participantsList?.querySelectorAll('li').forEach((li) => {
-      const indicator = li.querySelector('.vote-indicator') as HTMLElement;
-      if (!indicator) return;
-
-      const vote = indicator.dataset.vote;
-      const hasVote = indicator.dataset.hasVote === 'true';
-      const participantName = li.querySelector('.participant-name')?.textContent || '';
-
-      if (showVotes && vote) {
-        // Show vote value next to name
-        const voteDisplay = li.querySelector('.vote-display');
-        if (!voteDisplay) {
-          const nameEl = li.querySelector('.participant-name');
-          if (nameEl) {
-            const span = document.createElement('span');
-            span.className = 'vote-display text-indigo-400 text-sm ml-2';
-            span.textContent = `voted ${vote}`;
-            nameEl.parentNode?.appendChild(span);
-          }
-        } else {
-          (voteDisplay as HTMLElement).textContent = `voted ${vote}`;
-        }
+  private toggleVoteIndicatorsVisibility(visible: boolean): void {
+    this.elements.participantsList?.querySelectorAll('.vote-indicator').forEach((indicator) => {
+      if (visible) {
+        (indicator as HTMLElement).classList.remove('hidden');
       } else {
-        // Hide vote value next to name
-        li.querySelector('.vote-display')?.remove();
+        (indicator as HTMLElement).classList.add('hidden');
       }
     });
   }
@@ -1012,8 +1095,8 @@ export class RoomController {
     }
     if (this.elements.settingsShowVotesDescription) {
       this.elements.settingsShowVotesDescription.textContent = this.bloc.showVotes
-        ? 'All participants can see who voted what'
-        : 'Votes are shown anonymously';
+        ? 'Vote indicators visible in sidebar'
+        : 'Vote indicators hidden in sidebar';
     }
     this.renderVoteOptions(this.bloc.voteOptions);
     // Use the Modal component's open function
@@ -1199,6 +1282,8 @@ export class RoomController {
 
   private updateButtonsForParticipant(li: HTMLElement, participantId: string | null, role: string | null): void {
     const isCurrentUser = participantId === this.bloc.currentParticipantId;
+    const promoteDemoteSlot = li.querySelector('.promote-demote-slot');
+    const kickSlot = li.querySelector('.kick-slot');
 
     // Remove existing buttons first
     li.querySelector('.promote-btn')?.remove();
@@ -1222,7 +1307,7 @@ export class RoomController {
         e.stopPropagation();
         if (participantId) this.handleDemoteClick(participantId);
       });
-      li.appendChild(demoteBtn);
+      promoteDemoteSlot?.appendChild(demoteBtn);
     } else {
       // Add promote button for non-managers (except self)
       if (!isCurrentUser) {
@@ -1239,7 +1324,7 @@ export class RoomController {
           e.stopPropagation();
           if (participantId) this.handlePromoteClick(participantId);
         });
-        li.appendChild(promoteBtn);
+        promoteDemoteSlot?.appendChild(promoteBtn);
       }
     }
 
@@ -1258,7 +1343,7 @@ export class RoomController {
         e.stopPropagation();
         if (participantId) this.handleKickClick(participantId);
       });
-      li.appendChild(kickBtn);
+      kickSlot?.appendChild(kickBtn);
     }
   }
 

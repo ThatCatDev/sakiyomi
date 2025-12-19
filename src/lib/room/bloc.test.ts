@@ -41,6 +41,7 @@ describe('RoomBloc', () => {
   const mockApiPromoteToManager = vi.mocked(api.promoteToManager);
   const mockApiDemoteFromManager = vi.mocked(api.demoteFromManager);
   const mockApiKickParticipant = vi.mocked(api.kickParticipant);
+  const mockApiUpdateRoomSettings = vi.mocked(api.updateRoomSettings);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -515,6 +516,109 @@ describe('RoomBloc', () => {
         type: 'error',
         payload: 'Participant not found',
       });
+    });
+  });
+
+  describe('updateSettings', () => {
+    it('should reject when not a manager', async () => {
+      bloc.isManager = false;
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.updateSettings({ showVotes: true });
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Only managers can change room settings',
+      });
+      expect(mockApiUpdateRoomSettings).not.toHaveBeenCalled();
+    });
+
+    it('should update settings when manager', async () => {
+      mockApiUpdateRoomSettings.mockResolvedValueOnce({
+        success: true,
+        data: {
+          name: 'Updated Room',
+          showVotes: true,
+          voteOptions: ['1', '2', '3', '5', '8'],
+        },
+      });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.updateSettings({
+        name: 'Updated Room',
+        showVotes: true,
+        voteOptions: ['1', '2', '3', '5', '8'],
+      });
+
+      expect(result).toBe(true);
+      expect(mockApiUpdateRoomSettings).toHaveBeenCalledWith('room-123', {
+        name: 'Updated Room',
+        showVotes: true,
+        voteOptions: ['1', '2', '3', '5', '8'],
+      });
+      expect(listener).toHaveBeenCalledWith({
+        type: 'settings_changed',
+        payload: {
+          name: 'Updated Room',
+          showVotes: true,
+          voteOptions: ['1', '2', '3', '5', '8'],
+        },
+      });
+    });
+
+    it('should update partial settings', async () => {
+      mockApiUpdateRoomSettings.mockResolvedValueOnce({
+        success: true,
+        data: {
+          name: 'Test Room',
+          showVotes: true,
+          voteOptions: ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'],
+        },
+      });
+
+      const result = await bloc.updateSettings({ showVotes: true });
+
+      expect(result).toBe(true);
+      expect(mockApiUpdateRoomSettings).toHaveBeenCalledWith('room-123', {
+        showVotes: true,
+      });
+    });
+
+    it('should emit error on API failure', async () => {
+      mockApiUpdateRoomSettings.mockResolvedValueOnce({
+        success: false,
+        error: 'Failed to update settings',
+      });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.updateSettings({ name: 'New Name' });
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Failed to update settings',
+      });
+    });
+
+    it('should not emit settings_changed when no data returned', async () => {
+      mockApiUpdateRoomSettings.mockResolvedValueOnce({
+        success: true,
+      });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.updateSettings({ showVotes: true });
+
+      expect(result).toBe(true);
+      expect(listener).not.toHaveBeenCalled();
     });
   });
 
