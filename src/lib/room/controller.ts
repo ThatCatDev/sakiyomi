@@ -708,17 +708,26 @@ export class RoomController {
 
     const totalVoters = participantVotes.filter(p => p.vote).length;
 
-    // Render list of participants and their votes
+    // Render list of participants and their votes (voters first, then non-voters)
     if (this.elements.voteResults) {
-      this.elements.voteResults.innerHTML = participantVotes
-        .filter(p => p.vote)
+      const sortedParticipants = [...participantVotes].sort((a, b) => {
+        // Voters come first
+        if (a.vote && !b.vote) return -1;
+        if (!a.vote && b.vote) return 1;
+        return 0;
+      });
+
+      this.elements.voteResults.innerHTML = sortedParticipants
         .map(({ name, vote }) => `
           <div class="flex items-center justify-between py-2 px-3 bg-slate-900/50 rounded-lg">
             <div class="flex items-center gap-2">
               <span class="w-7 h-7 bg-indigo-600/80 rounded-full flex items-center justify-center text-white text-sm font-medium">${name.charAt(0).toUpperCase()}</span>
               <span class="text-white">${name}</span>
             </div>
-            <span class="text-lg font-bold text-indigo-400">${vote}</span>
+            ${vote
+              ? `<span class="text-lg font-bold text-indigo-400">${vote}</span>`
+              : `<span class="text-sm text-slate-500 italic">Didn't vote</span>`
+            }
           </div>
         `).join('');
     }
@@ -1126,7 +1135,7 @@ export class RoomController {
       this.elements.roomNameDisplay.textContent = name;
     }
     // Also update document title
-    document.title = `${name} - Story Poker`;
+    document.title = `${name} - Sakiyomi`;
   }
 
   private handleRoleChange(payload: { isManager: boolean }): void {
