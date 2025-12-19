@@ -14,6 +14,7 @@ vi.mock('./api', () => ({
   toggleShowVotes: vi.fn(),
   promoteToManager: vi.fn(),
   demoteFromManager: vi.fn(),
+  kickParticipant: vi.fn(),
   updateRoomSettings: vi.fn(),
 }));
 
@@ -39,6 +40,7 @@ describe('RoomBloc', () => {
   const mockApiToggleShowVotes = vi.mocked(api.toggleShowVotes);
   const mockApiPromoteToManager = vi.mocked(api.promoteToManager);
   const mockApiDemoteFromManager = vi.mocked(api.demoteFromManager);
+  const mockApiKickParticipant = vi.mocked(api.kickParticipant);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -449,6 +451,69 @@ describe('RoomBloc', () => {
       expect(listener).toHaveBeenCalledWith({
         type: 'error',
         payload: 'Cannot demote the last manager. Promote someone else first.',
+      });
+    });
+  });
+
+  describe('kickParticipant', () => {
+    it('should reject when not a manager', async () => {
+      bloc.isManager = false;
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.kickParticipant('participant-456');
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Only managers can kick participants',
+      });
+      expect(mockApiKickParticipant).not.toHaveBeenCalled();
+    });
+
+    it('should reject kicking yourself', async () => {
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.kickParticipant('participant-123'); // self
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'You cannot kick yourself. Use leave instead.',
+      });
+      expect(mockApiKickParticipant).not.toHaveBeenCalled();
+    });
+
+    it('should kick participant successfully', async () => {
+      mockApiKickParticipant.mockResolvedValueOnce({ success: true });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.kickParticipant('participant-456');
+
+      expect(result).toBe(true);
+      expect(mockApiKickParticipant).toHaveBeenCalledWith('room-123', 'participant-456');
+      expect(listener).toHaveBeenCalledWith({
+        type: 'participant_kicked',
+        payload: { participantId: 'participant-456' },
+      });
+    });
+
+    it('should emit error on API failure', async () => {
+      mockApiKickParticipant.mockResolvedValueOnce({ success: false, error: 'Participant not found' });
+
+      const listener = vi.fn();
+      bloc.subscribe(listener);
+
+      const result = await bloc.kickParticipant('invalid-id');
+
+      expect(result).toBe(false);
+      expect(listener).toHaveBeenCalledWith({
+        type: 'error',
+        payload: 'Participant not found',
       });
     });
   });

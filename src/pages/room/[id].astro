@@ -11,6 +11,7 @@ import StatusBanner from '../../components/room/StatusBanner.astro';
 import ParticipantsSidebar from '../../components/room/ParticipantsSidebar.astro';
 import VoteResults from '../../components/room/VoteResults.astro';
 import LeaveModal from '../../components/room/LeaveModal.astro';
+import KickConfirmModal from '../../components/room/KickConfirmModal.astro';
 import RoomSettingsModal from '../../components/room/RoomSettingsModal.astro';
 
 import type { Participant, VotingStatus } from '../../lib/room/types';
@@ -182,6 +183,9 @@ const voteOptions = room.vote_options || ['0', '1', '2', '3', '5', '8', '13', '2
 
   <!-- Leave Room Modal -->
   <LeaveModal />
+
+  <!-- Kick Confirm Modal -->
+  <KickConfirmModal />
 
   <!-- Settings Modal -->
   <RoomSettingsModal

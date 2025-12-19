@@ -258,3 +258,26 @@ export async function demoteFromManager(roomId: string, participantId: string): 
     return { success: false, error: 'Network error' };
   }
 }
+
+export async function kickParticipant(roomId: string, participantId: string): Promise<ApiResponse> {
+  try {
+    const response = await fetch(`/api/rooms/${roomId}/kick`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ participantId }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: result.error || 'Failed to kick participant' };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('Failed to kick participant:', err);
+    return { success: false, error: 'Network error' };
+  }
+}

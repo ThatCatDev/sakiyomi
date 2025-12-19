@@ -353,4 +353,70 @@ describe('Room API', () => {
       expect(result.error).toBe('Network error');
     });
   });
+
+  describe('kickParticipant', () => {
+    it('should kick participant successfully', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true }),
+      });
+
+      const result = await api.kickParticipant('room-123', 'participant-456');
+
+      expect(result.success).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/rooms/room-123/kick',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ participantId: 'participant-456' }),
+        })
+      );
+    });
+
+    it('should return error when not a manager', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Only managers can kick participants' }),
+      });
+
+      const result = await api.kickParticipant('room-123', 'participant-456');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Only managers can kick participants');
+    });
+
+    it('should return error when trying to kick yourself', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'You cannot kick yourself. Use leave instead.' }),
+      });
+
+      const result = await api.kickParticipant('room-123', 'self-id');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('You cannot kick yourself. Use leave instead.');
+    });
+
+    it('should return error when participant not found', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Participant not found' }),
+      });
+
+      const result = await api.kickParticipant('room-123', 'invalid-id');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Participant not found');
+    });
+
+    it('should handle network errors', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await api.kickParticipant('room-123', 'participant-456');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Network error');
+    });
+  });
 });

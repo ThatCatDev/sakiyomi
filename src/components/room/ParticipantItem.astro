@@ -7,9 +7,10 @@ interface Props {
   votingStatus: VotingStatus;
   canPromote?: boolean;
   canDemote?: boolean;
+  canKick?: boolean;
 }
 
-const { participant, isCurrentUser, votingStatus, canPromote = false, canDemote = false } = Astro.props;
+const { participant, isCurrentUser, votingStatus, canPromote = false, canDemote = false, canKick = false } = Astro.props;
 
 const initial = participant.name.charAt(0).toUpperCase();
 const hasVote = !!participant.current_vote;
@@ -79,6 +80,18 @@ const showVoteValue = votingStatus === 'revealed' && participant.current_vote;
     >
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+  )}
+
+  {canKick && (
+    <button
+      class="kick-btn p-1 text-slate-400 hover:text-red-400 transition-colors"
+      title="Remove from room"
+      data-participant-id={participant.id}
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
       </svg>
     </button>
   )}

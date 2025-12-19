@@ -15,8 +15,10 @@ export type RoomEventType =
   | 'participant_joined'
   | 'participant_left'
   | 'participant_updated'
+  | 'participant_kicked'
   | 'role_changed'
   | 'vote_submitted'
+  | 'kicked'
   | 'error';
 
 export interface RoomEvent {
@@ -139,9 +141,17 @@ export class RoomBloc {
           filter: `room_id=eq.${this.roomId}`,
         },
         (payload) => {
+          const deletedParticipant = payload.old as { id: string };
+
+          // Check if the current user was kicked
+          if (deletedParticipant.id === this.currentParticipantId) {
+            this.emit({ type: 'kicked' });
+            return;
+          }
+
           this.emit({
             type: 'participant_left',
-            payload: payload.old as { id: string },
+            payload: deletedParticipant,
           });
         }
       )
@@ -384,6 +394,29 @@ export class RoomBloc {
       this.isManager = false;
       this.emit({ type: 'role_changed', payload: { isManager: false } });
     }
+
+    return true;
+  }
+
+  async kickParticipant(participantId: string): Promise<boolean> {
+    if (!this.isManager) {
+      this.emit({ type: 'error', payload: 'Only managers can kick participants' });
+      return false;
+    }
+
+    if (participantId === this.currentParticipantId) {
+      this.emit({ type: 'error', payload: 'You cannot kick yourself. Use leave instead.' });
+      return false;
+    }
+
+    const result = await api.kickParticipant(this.roomId, participantId);
+
+    if (!result.success) {
+      this.emit({ type: 'error', payload: result.error });
+      return false;
+    }
+
+    this.emit({ type: 'participant_kicked', payload: { participantId } });
 
     return true;
   }

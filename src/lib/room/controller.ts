@@ -6,6 +6,7 @@ import type { Participant, VotingStatus } from './types';
 
 export class RoomController {
   private bloc: RoomBloc;
+  private pendingKickParticipantId: string | null = null;
 
   // DOM Element references
   private elements: {
@@ -59,6 +60,12 @@ export class RoomController {
     leaveModal: HTMLElement | null;
     cancelLeaveBtn: HTMLElement | null;
     confirmLeaveBtn: HTMLElement | null;
+
+    // Kick modal
+    kickModal: HTMLElement | null;
+    kickModalDescription: HTMLElement | null;
+    cancelKickBtn: HTMLElement | null;
+    confirmKickBtn: HTMLElement | null;
 
     // Join form
     joinForm: HTMLFormElement | null;
@@ -147,6 +154,12 @@ export class RoomController {
       cancelLeaveBtn: document.getElementById('cancel-leave-btn'),
       confirmLeaveBtn: document.getElementById('confirm-leave-btn'),
 
+      // Kick modal
+      kickModal: document.getElementById('kick-modal'),
+      kickModalDescription: document.getElementById('kick-modal-description'),
+      cancelKickBtn: document.getElementById('cancel-kick-btn'),
+      confirmKickBtn: document.getElementById('confirm-kick-btn'),
+
       // Join form
       joinForm: document.getElementById('join-form') as HTMLFormElement,
       joinError: document.getElementById('join-error'),
@@ -211,6 +224,17 @@ export class RoomController {
         }
       });
     });
+
+    // Bind click handlers to server-rendered kick buttons
+    document.querySelectorAll('.kick-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const participantId = (btn as HTMLElement).dataset.participantId;
+        if (participantId) {
+          this.handleKickClick(participantId);
+        }
+      });
+    });
   }
 
   private bindEvents(): void {
@@ -236,6 +260,10 @@ export class RoomController {
     this.elements.cancelLeaveBtn?.addEventListener('click', () => this.closeLeaveModal());
     this.elements.confirmLeaveBtn?.addEventListener('click', () => this.handleLeaveRoom());
     // Note: Backdrop click and escape key are handled by the Modal component
+
+    // Kick participant
+    this.elements.cancelKickBtn?.addEventListener('click', () => this.closeKickModal());
+    this.elements.confirmKickBtn?.addEventListener('click', () => this.handleConfirmKick());
 
     // Join form
     this.elements.joinForm?.addEventListener('submit', (e) => this.handleJoinSubmit(e));
@@ -328,10 +356,18 @@ export class RoomController {
       case 'role_changed':
         this.handleRoleChange(event.payload as { isManager: boolean });
         break;
+      case 'kicked':
+        this.handleKicked();
+        break;
       case 'error':
         this.showError(event.payload as string);
         break;
     }
+  }
+
+  private handleKicked(): void {
+    alert('You have been removed from this room by a manager.');
+    window.location.reload();
   }
 
   // UI Update methods
@@ -530,6 +566,8 @@ export class RoomController {
     const hasVote = !!participant.current_vote;
     const showVote = this.bloc.votingStatus === 'revealed' && participant.current_vote;
     const canPromote = this.bloc.isManager && !isCurrentUser && participant.role !== 'manager';
+    const canDemote = this.bloc.isManager && participant.role === 'manager';
+    const canKick = this.bloc.isManager && !isCurrentUser;
 
     li.innerHTML = `
       <div class="relative flex-shrink-0">
@@ -552,14 +590,44 @@ export class RoomController {
           </svg>
         </button>
       ` : ''}
+      ${canDemote ? `
+        <button class="demote-btn p-1 text-slate-400 hover:text-red-400 transition-colors" title="${isCurrentUser ? 'Step down as manager' : 'Remove manager'}" data-participant-id="${participant.id}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      ` : ''}
+      ${canKick ? `
+        <button class="kick-btn p-1 text-slate-400 hover:text-red-400 transition-colors" title="Remove from room" data-participant-id="${participant.id}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      ` : ''}
     `;
 
-    // Add click handler for promote button
+    // Add click handlers
     if (canPromote) {
       const promoteBtn = li.querySelector('.promote-btn');
       promoteBtn?.addEventListener('click', (e) => {
         e.stopPropagation();
         this.handlePromoteClick(participant.id);
+      });
+    }
+
+    if (canDemote) {
+      const demoteBtn = li.querySelector('.demote-btn');
+      demoteBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.handleDemoteClick(participant.id);
+      });
+    }
+
+    if (canKick) {
+      const kickBtn = li.querySelector('.kick-btn');
+      kickBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.handleKickClick(participant.id);
       });
     }
 
@@ -1103,8 +1171,8 @@ export class RoomController {
       const youSection = document.querySelector('.border-b.border-slate-800');
       youSection?.querySelector('.bg-indigo-600\\/30')?.remove();
 
-      // Remove all promote/demote buttons
-      document.querySelectorAll('.promote-btn, .demote-btn').forEach(btn => btn.remove());
+      // Remove all promote/demote/kick buttons
+      document.querySelectorAll('.promote-btn, .demote-btn, .kick-btn').forEach(btn => btn.remove());
     }
   }
 
@@ -1126,6 +1194,7 @@ export class RoomController {
     // Remove existing buttons first
     li.querySelector('.promote-btn')?.remove();
     li.querySelector('.demote-btn')?.remove();
+    li.querySelector('.kick-btn')?.remove();
 
     if (!this.bloc.isManager) return;
 
@@ -1164,10 +1233,54 @@ export class RoomController {
         li.appendChild(promoteBtn);
       }
     }
+
+    // Add kick button for all other participants (not self)
+    if (!isCurrentUser) {
+      const kickBtn = document.createElement('button');
+      kickBtn.className = 'kick-btn p-1 text-slate-400 hover:text-red-400 transition-colors';
+      kickBtn.title = 'Remove from room';
+      kickBtn.dataset.participantId = participantId || '';
+      kickBtn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      `;
+      kickBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (participantId) this.handleKickClick(participantId);
+      });
+      li.appendChild(kickBtn);
+    }
   }
 
   private async handleDemoteClick(participantId: string): Promise<void> {
     const success = await this.bloc.demoteFromManager(participantId);
+    if (!success) {
+      // Error already emitted by bloc
+    }
+  }
+
+  private handleKickClick(participantId: string): void {
+    this.pendingKickParticipantId = participantId;
+    this.openKickModal();
+  }
+
+  private openKickModal(): void {
+    this.elements.kickModal?.classList.remove('hidden');
+  }
+
+  private closeKickModal(): void {
+    this.elements.kickModal?.classList.add('hidden');
+    this.pendingKickParticipantId = null;
+  }
+
+  private async handleConfirmKick(): Promise<void> {
+    if (!this.pendingKickParticipantId) return;
+
+    const participantId = this.pendingKickParticipantId;
+    this.closeKickModal();
+
+    const success = await this.bloc.kickParticipant(participantId);
     if (!success) {
       // Error already emitted by bloc
     }

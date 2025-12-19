@@ -681,4 +681,145 @@ test.describe('Manager Controls', () => {
     await context2.close();
     await context3.close();
   });
+
+  test('manager can kick another user', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Room Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'Kicked User');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Wait for realtime sync
+    await page.waitForTimeout(500);
+
+    // Manager clicks kick button
+    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Kicked User' });
+    await expect(participantItem).toBeVisible();
+
+    const kickBtn = participantItem.locator('.kick-btn');
+    await expect(kickBtn).toBeVisible();
+    await kickBtn.click();
+
+    // Kick confirmation modal should appear
+    await expect(page.locator('#kick-modal')).toBeVisible();
+
+    // Second user should be kicked - handle alert on page2
+    page2.on('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('removed from this room');
+      await dialog.accept();
+    });
+
+    // Confirm kick
+    await page.click('#confirm-kick-btn');
+
+    // Wait for kick to process
+    await page2.waitForTimeout(1000);
+
+    // Participant should be removed from manager's list
+    await expect(participantItem).not.toBeVisible({ timeout: 10000 });
+
+    // Participant count should decrease
+    await expect(page.locator('#participant-count')).toHaveText('1');
+
+    await context2.close();
+  });
+
+  test('manager cannot kick themselves', async ({ page }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+
+    await page.fill('input[name="name"]', 'Room Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Find own participant item
+    const ownItem = page.locator('#participants-list li').filter({ hasText: '(you)' });
+
+    // Kick button should NOT be visible for self
+    await expect(ownItem.locator('.kick-btn')).not.toBeVisible();
+  });
+
+  test('kicked user sees alert and is redirected to join form', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Room Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'Kicked User');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Wait for realtime sync
+    await page.waitForTimeout(500);
+
+    // Handle alert on page2
+    page2.on('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('removed from this room');
+      await dialog.accept();
+    });
+
+    // Manager clicks kick button
+    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Kicked User' });
+    await participantItem.locator('.kick-btn').click();
+
+    // Confirm kick in modal
+    await expect(page.locator('#kick-modal')).toBeVisible();
+    await page.click('#confirm-kick-btn');
+
+    // Kicked user should see join form again after page reload
+    await expect(page2.locator('#join-section')).toBeVisible({ timeout: 15000 });
+
+    await context2.close();
+  });
+
+  test('non-manager cannot see kick button', async ({ page, browser }) => {
+    await page.goto('/');
+
+    // Create room and join as manager
+    await createRoom(page);
+    const roomUrl = page.url();
+
+    await page.fill('input[name="name"]', 'Room Manager');
+    await page.click('button:has-text("Join Room")');
+    await expect(page.locator('#manager-controls')).toBeVisible();
+
+    // Second user joins as non-manager
+    const context2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page2 = await context2.newPage();
+    await page2.goto(roomUrl);
+
+    await page2.fill('input[name="name"]', 'Team Member');
+    await page2.click('button:has-text("Join Room")');
+    await expect(page2.locator('#vote-cards-section')).toBeVisible();
+
+    // Non-manager should NOT see kick buttons
+    await expect(page2.locator('.kick-btn')).not.toBeVisible();
+
+    await context2.close();
+  });
 });
