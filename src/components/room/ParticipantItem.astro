@@ -1,5 +1,6 @@
 ---
 import type { Participant, VotingStatus } from '../../lib/room/types';
+import { getAvatarUrl } from '../../lib/room/types';
 
 interface Props {
   participant: Participant;
@@ -21,6 +22,11 @@ const hasVoted = !!participant.current_vote;
 const showVoteValue = (isViewerManager || votingStatus === 'revealed') && participant.current_vote;
 // Hide vote indicator if not manager and showVotes is disabled
 const hideVoteIndicator = !isViewerManager && !showVotes;
+
+// Avatar URL - use DiceBear if avatar fields exist, otherwise fallback to name as seed
+const avatarStyle = participant.avatar_style || 'adventurer';
+const avatarSeed = participant.avatar_seed || participant.name;
+const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
 ---
 
 <li
@@ -33,17 +39,17 @@ const hideVoteIndicator = !isViewerManager && !showVotes;
   data-is-online={isOnline ? 'true' : 'false'}
 >
   <div class="relative flex-shrink-0">
-    <div class:list={[
-      "w-8 h-8 rounded-full flex items-center justify-center",
-      isOnline ? "bg-indigo-600/80" : "bg-slate-600"
-    ]}>
-      <span class:list={[
-        "text-sm font-medium participant-initial",
-        isOnline ? "text-white" : "text-slate-400"
-      ]}>
-        {initial}
-      </span>
-    </div>
+    <img
+      src={avatarUrl}
+      alt={participant.name}
+      class:list={[
+        "w-8 h-8 rounded-full participant-avatar",
+        !isOnline && "grayscale opacity-70"
+      ]}
+      data-avatar-style={avatarStyle}
+      data-avatar-seed={avatarSeed}
+      loading="lazy"
+    />
     <!-- Current user indicator (star) -->
     {isCurrentUser && (
       <div class="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full border-2 border-slate-900 flex items-center justify-center current-user-indicator">

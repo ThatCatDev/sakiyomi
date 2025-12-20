@@ -13,6 +13,7 @@ import VoteResults from '../../components/room/VoteResults.astro';
 import LeaveModal from '../../components/room/LeaveModal.astro';
 import KickConfirmModal from '../../components/room/KickConfirmModal.astro';
 import RoomSettingsModal from '../../components/room/RoomSettingsModal.astro';
+import AvatarSelectModal from '../../components/room/AvatarSelectModal.astro';
 
 import type { Participant, VotingStatus } from '../../lib/room/types';
 
@@ -195,6 +196,14 @@ const voteOptions = room.vote_options || ['0', '1', '2', '3', '5', '8', '13', '2
     voteOptions={voteOptions}
     isManager={isManager}
   />
+
+  <!-- Avatar Select Modal -->
+  {currentParticipant && (
+    <AvatarSelectModal
+      currentStyle={currentParticipant.avatar_style || 'adventurer'}
+      currentSeed={currentParticipant.avatar_seed || currentParticipant.name}
+    />
+  )}
 </Layout>
 
 <!-- Hidden data for client-side JS -->

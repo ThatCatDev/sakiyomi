@@ -25,6 +25,45 @@ export interface Participant {
   user_id: string | null;
   session_id: string;
   created_at: string;
+  avatar_style: string;
+  avatar_seed: string;
+}
+
+// Available DiceBear avatar styles
+export const AVATAR_STYLES = [
+  'adventurer',
+  'adventurer-neutral',
+  'avataaars',
+  'avataaars-neutral',
+  'big-ears',
+  'big-ears-neutral',
+  'big-smile',
+  'bottts',
+  'bottts-neutral',
+  'croodles',
+  'croodles-neutral',
+  'fun-emoji',
+  'icons',
+  'identicon',
+  'lorelei',
+  'lorelei-neutral',
+  'micah',
+  'miniavs',
+  'notionists',
+  'notionists-neutral',
+  'open-peeps',
+  'personas',
+  'pixel-art',
+  'pixel-art-neutral',
+  'shapes',
+  'thumbs',
+] as const;
+
+export type AvatarStyle = typeof AVATAR_STYLES[number];
+
+// Helper to generate DiceBear avatar URL
+export function getAvatarUrl(style: string, seed: string, size = 80): string {
+  return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&size=${size}`;
 }
 
 export interface RoomState {

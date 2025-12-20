@@ -483,6 +483,17 @@ export class RoomBloc {
     return true;
   }
 
+  async updateAvatar(avatarStyle: string, avatarSeed: string): Promise<boolean> {
+    const result = await api.updateAvatar(this.roomId, avatarStyle, avatarSeed);
+
+    if (!result.success) {
+      this.emit({ type: 'error', payload: result.error });
+      return false;
+    }
+
+    return true;
+  }
+
   // Utility functions
   static calculateResults(participants: { current_vote: string | null }[]): {
     results: VoteResult[];

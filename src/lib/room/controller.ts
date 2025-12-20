@@ -3,6 +3,7 @@
 
 import { RoomBloc, type RoomEvent } from './bloc';
 import type { Participant, VotingStatus } from './types';
+import { getAvatarUrl } from './types';
 
 export class RoomController {
   private bloc: RoomBloc;
@@ -93,6 +94,14 @@ export class RoomController {
     addOptionBtn: HTMLElement | null;
     roomNameDisplay: HTMLElement | null;
     voteCardsContainer: HTMLElement | null;
+
+    // Avatar modal
+    changeAvatarBtn: HTMLElement | null;
+    currentUserAvatar: HTMLImageElement | null;
+    avatarModal: HTMLElement | null;
+    avatarPreview: HTMLImageElement | null;
+    cancelAvatarBtn: HTMLElement | null;
+    saveAvatarBtn: HTMLElement | null;
   };
 
   constructor(bloc: RoomBloc) {
@@ -185,6 +194,14 @@ export class RoomController {
       addOptionBtn: document.getElementById('add-option-btn'),
       roomNameDisplay: document.getElementById('room-name-display'),
       voteCardsContainer: document.getElementById('vote-cards'),
+
+      // Avatar modal
+      changeAvatarBtn: document.getElementById('change-avatar-btn'),
+      currentUserAvatar: document.getElementById('current-user-avatar') as HTMLImageElement,
+      avatarModal: document.getElementById('avatar-modal'),
+      avatarPreview: document.getElementById('avatar-preview') as HTMLImageElement,
+      cancelAvatarBtn: document.getElementById('cancel-avatar-btn'),
+      saveAvatarBtn: document.getElementById('save-avatar-btn'),
     };
   }
 
@@ -321,6 +338,11 @@ export class RoomController {
 
     // Copy functionality
     this.elements.copyBtn?.addEventListener('click', () => this.handleCopyLink());
+
+    // Avatar modal
+    this.elements.changeAvatarBtn?.addEventListener('click', () => this.openAvatarModal());
+    this.elements.cancelAvatarBtn?.addEventListener('click', () => this.closeAvatarModal());
+    this.elements.saveAvatarBtn?.addEventListener('click', () => this.handleSaveAvatar());
   }
 
   private handleBlocEvent(event: RoomEvent): void {
@@ -394,27 +416,13 @@ export class RoomController {
         li.classList.add('opacity-50');
       }
 
-      // Update avatar styling
-      const avatarContainer = li.querySelector('.relative.flex-shrink-0 > div:first-child');
-      if (avatarContainer) {
+      // Update avatar styling (now an image)
+      const avatarImg = li.querySelector('.participant-avatar') as HTMLImageElement;
+      if (avatarImg) {
         if (isOnline) {
-          avatarContainer.classList.remove('bg-slate-600');
-          avatarContainer.classList.add('bg-indigo-600/80');
+          avatarImg.classList.remove('grayscale', 'opacity-70');
         } else {
-          avatarContainer.classList.remove('bg-indigo-600/80');
-          avatarContainer.classList.add('bg-slate-600');
-        }
-
-        // Update initial text color
-        const initialEl = avatarContainer.querySelector('.participant-initial');
-        if (initialEl) {
-          if (isOnline) {
-            initialEl.classList.remove('text-slate-400');
-            initialEl.classList.add('text-white');
-          } else {
-            initialEl.classList.remove('text-white');
-            initialEl.classList.add('text-slate-400');
-          }
+          avatarImg.classList.add('grayscale', 'opacity-70');
         }
       }
 
@@ -594,8 +602,15 @@ export class RoomController {
     const nameEl = el.querySelector('.participant-name');
     if (nameEl) nameEl.textContent = participant.name;
 
-    const initialEl = el.querySelector('.participant-initial');
-    if (initialEl) initialEl.textContent = participant.name.charAt(0).toUpperCase();
+    // Update avatar
+    const avatarEl = el.querySelector('.participant-avatar') as HTMLImageElement;
+    if (avatarEl) {
+      const avatarStyle = participant.avatar_style || 'adventurer';
+      const avatarSeed = participant.avatar_seed || participant.name;
+      avatarEl.src = getAvatarUrl(avatarStyle, avatarSeed, 32);
+      avatarEl.dataset.avatarStyle = avatarStyle;
+      avatarEl.dataset.avatarSeed = avatarSeed;
+    }
 
     // Update role badge and buttons
     const currentRole = el.getAttribute('data-participant-role');
@@ -675,10 +690,14 @@ export class RoomController {
     li.setAttribute('data-is-online', isOnline ? 'true' : 'false');
 
     const isCurrentUser = participant.id === this.bloc.currentParticipantId;
-    const initial = participant.name.charAt(0).toUpperCase();
     const canPromote = this.bloc.isManager && !isCurrentUser && participant.role !== 'manager';
     const canDemote = this.bloc.isManager && participant.role === 'manager';
     const canKick = this.bloc.isManager && !isCurrentUser;
+
+    // Avatar URL
+    const avatarStyle = participant.avatar_style || 'adventurer';
+    const avatarSeed = participant.avatar_seed || participant.name;
+    const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
 
     // Vote indicator logic - managers see actual votes, others see checkmark
     const hasVoted = !!participant.current_vote;
@@ -697,9 +716,14 @@ export class RoomController {
 
     li.innerHTML = `
       <div class="relative flex-shrink-0">
-        <div class="w-8 h-8 ${isOnline ? 'bg-indigo-600/80' : 'bg-slate-600'} rounded-full flex items-center justify-center">
-          <span class="${isOnline ? 'text-white' : 'text-slate-400'} text-sm font-medium participant-initial">${initial}</span>
-        </div>
+        <img
+          src="${avatarUrl}"
+          alt="${participant.name}"
+          class="w-8 h-8 rounded-full participant-avatar${!isOnline ? ' grayscale opacity-70' : ''}"
+          data-avatar-style="${avatarStyle}"
+          data-avatar-seed="${avatarSeed}"
+          loading="lazy"
+        />
         ${isCurrentUser ? `
           <div class="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full border-2 border-slate-900 flex items-center justify-center current-user-indicator">
             <svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -1415,6 +1439,43 @@ export class RoomController {
     const success = await this.bloc.kickParticipant(participantId);
     if (!success) {
       // Error already emitted by bloc
+    }
+  }
+
+  // Avatar modal methods
+  private openAvatarModal(): void {
+    // Initialize selected avatar from current user
+    const currentAvatar = this.elements.currentUserAvatar;
+    if (currentAvatar) {
+      (window as any).__selectedAvatarStyle = currentAvatar.dataset.avatarStyle || 'adventurer';
+      (window as any).__selectedAvatarSeed = currentAvatar.dataset.avatarSeed || '';
+    }
+    // Use the Modal component's open function
+    (window as unknown as Record<string, () => void>)['open_avatar-modal']?.();
+  }
+
+  private closeAvatarModal(): void {
+    // Use the Modal component's close function
+    (window as unknown as Record<string, () => void>)['close_avatar-modal']?.();
+  }
+
+  private async handleSaveAvatar(): Promise<void> {
+    const style = (window as any).__selectedAvatarStyle;
+    const seed = (window as any).__selectedAvatarSeed;
+
+    if (!style || !seed) {
+      return;
+    }
+
+    const success = await this.bloc.updateAvatar(style, seed);
+    if (success) {
+      // Update the current user avatar in the sidebar
+      if (this.elements.currentUserAvatar) {
+        this.elements.currentUserAvatar.src = getAvatarUrl(style, seed, 40);
+        this.elements.currentUserAvatar.dataset.avatarStyle = style;
+        this.elements.currentUserAvatar.dataset.avatarSeed = seed;
+      }
+      this.closeAvatarModal();
     }
   }
 }

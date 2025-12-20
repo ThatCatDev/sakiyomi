@@ -281,3 +281,41 @@ export async function kickParticipant(roomId: string, participantId: string): Pr
     return { success: false, error: 'Network error' };
   }
 }
+
+export interface AvatarData {
+  avatarStyle: string;
+  avatarSeed: string;
+}
+
+export async function updateAvatar(
+  roomId: string,
+  avatarStyle: string,
+  avatarSeed: string
+): Promise<ApiResponse<AvatarData>> {
+  try {
+    const response = await fetch(`/api/rooms/${roomId}/update-avatar`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ avatarStyle, avatarSeed }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: result.error || 'Failed to update avatar' };
+    }
+
+    return {
+      success: true,
+      data: {
+        avatarStyle: result.avatarStyle,
+        avatarSeed: result.avatarSeed,
+      },
+    };
+  } catch (err) {
+    console.error('Failed to update avatar:', err);
+    return { success: false, error: 'Network error' };
+  }
+}

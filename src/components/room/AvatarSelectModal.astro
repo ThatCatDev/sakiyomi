@@ -1,0 +1,269 @@
+---
+import Modal from '../ui/Modal.astro';
+import { AVATAR_STYLES, getAvatarUrl } from '../../lib/room/types';
+
+interface Props {
+  currentStyle: string;
+  currentSeed: string;
+}
+
+const { currentStyle, currentSeed } = Astro.props;
+
+// Fun subset of styles for the picker
+const funStyles = [
+  'adventurer',
+  'big-smile',
+  'bottts',
+  'fun-emoji',
+  'lorelei',
+  'micah',
+  'notionists',
+  'pixel-art',
+  'thumbs',
+  'avataaars',
+  'big-ears',
+  'croodles',
+  'open-peeps',
+  'personas',
+  'miniavs',
+  'shapes',
+];
+
+// Generate random seeds for variety
+const seeds = ['happy', 'cool', 'funky', 'wild', 'chill', 'zen', 'spark', 'glow'];
+---
+
+<Modal id="avatar-modal" title="Choose Your Avatar" size="lg" showCloseButton>
+  <div class="space-y-4">
+    <!-- Current Avatar Preview -->
+    <div class="flex items-center gap-4 p-4 bg-slate-900 rounded-lg">
+      <img
+        id="avatar-preview"
+        src={getAvatarUrl(currentStyle, currentSeed, 80)}
+        alt="Current avatar"
+        class="w-20 h-20 rounded-full bg-slate-700"
+      />
+      <div>
+        <p class="text-white font-medium">Current Avatar</p>
+        <p class="text-slate-400 text-sm">Click an avatar below to change it</p>
+      </div>
+    </div>
+
+    <!-- Style Tabs -->
+    <div class="flex flex-wrap gap-2 pb-2 border-b border-slate-700">
+      {funStyles.map((style, index) => (
+        <button
+          type="button"
+          class:list={[
+            "style-tab px-3 py-1.5 text-xs rounded-full transition-colors",
+            style === currentStyle
+              ? "bg-indigo-600 text-white"
+              : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+          ]}
+          data-style={style}
+        >
+          {style.replace(/-/g, ' ')}
+        </button>
+      ))}
+    </div>
+
+    <!-- Avatar Grid -->
+    <div id="avatar-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-[400px] overflow-y-auto p-1">
+      {seeds.map((seed, index) => (
+        <button
+          type="button"
+          class:list={[
+            "avatar-option p-2 rounded-lg transition-all hover:scale-105",
+            currentStyle === currentStyle && currentSeed === seed
+              ? "ring-2 ring-indigo-500 bg-slate-700"
+              : "bg-slate-800 hover:bg-slate-700"
+          ]}
+          data-style={currentStyle}
+          data-seed={seed}
+        >
+          <img
+            src={getAvatarUrl(currentStyle, seed, 64)}
+            alt={`Avatar ${seed}`}
+            class="w-full aspect-square rounded-lg"
+            loading="lazy"
+          />
+        </button>
+      ))}
+      {/* Add more random seeds */}
+      {Array.from({ length: 16 }, (_, i) => `random-${i + 1}`).map((seed) => (
+        <button
+          type="button"
+          class="avatar-option p-2 rounded-lg transition-all hover:scale-105 bg-slate-800 hover:bg-slate-700"
+          data-style={currentStyle}
+          data-seed={seed}
+        >
+          <img
+            src={getAvatarUrl(currentStyle, seed, 64)}
+            alt={`Avatar ${seed}`}
+            class="w-full aspect-square rounded-lg"
+            loading="lazy"
+          />
+        </button>
+      ))}
+    </div>
+
+    <!-- Randomize Button -->
+    <div class="flex justify-center">
+      <button
+        type="button"
+        id="randomize-avatar-btn"
+        class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Randomize
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="flex justify-end gap-2 pt-4 border-t border-slate-700 mt-4">
+    <button
+      id="cancel-avatar-btn"
+      class="px-4 py-2 text-slate-300 hover:text-white text-sm transition-colors"
+    >
+      Cancel
+    </button>
+    <button
+      id="save-avatar-btn"
+      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+    >
+      Save Avatar
+    </button>
+  </div>
+</Modal>
+
+<script>
+  const funStyles = [
+    'adventurer',
+    'big-smile',
+    'bottts',
+    'fun-emoji',
+    'lorelei',
+    'micah',
+    'notionists',
+    'pixel-art',
+    'thumbs',
+    'avataaars',
+    'big-ears',
+    'croodles',
+    'open-peeps',
+    'personas',
+    'miniavs',
+    'shapes',
+  ];
+
+  const seeds = ['happy', 'cool', 'funky', 'wild', 'chill', 'zen', 'spark', 'glow'];
+
+  function getAvatarUrl(style: string, seed: string, size = 64): string {
+    return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&size=${size}`;
+  }
+
+  function updateAvatarGrid(style: string) {
+    const grid = document.getElementById('avatar-grid');
+    if (!grid) return;
+
+    const allSeeds = [...seeds, ...Array.from({ length: 16 }, (_, i) => `random-${i + 1}`)];
+
+    grid.innerHTML = allSeeds.map((seed) => `
+      <button
+        type="button"
+        class="avatar-option p-2 rounded-lg transition-all hover:scale-105 bg-slate-800 hover:bg-slate-700"
+        data-style="${style}"
+        data-seed="${seed}"
+      >
+        <img
+          src="${getAvatarUrl(style, seed, 64)}"
+          alt="Avatar ${seed}"
+          class="w-full aspect-square rounded-lg"
+          loading="lazy"
+        />
+      </button>
+    `).join('');
+
+    // Rebind click handlers
+    bindAvatarOptions();
+  }
+
+  function bindAvatarOptions() {
+    document.querySelectorAll('.avatar-option').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const style = (btn as HTMLElement).dataset.style!;
+        const seed = (btn as HTMLElement).dataset.seed!;
+
+        // Update preview
+        const preview = document.getElementById('avatar-preview') as HTMLImageElement;
+        if (preview) {
+          preview.src = getAvatarUrl(style, seed, 80);
+        }
+
+        // Store selection
+        (window as any).__selectedAvatarStyle = style;
+        (window as any).__selectedAvatarSeed = seed;
+
+        // Highlight selected
+        document.querySelectorAll('.avatar-option').forEach((opt) => {
+          opt.classList.remove('ring-2', 'ring-indigo-500', 'bg-slate-700');
+          opt.classList.add('bg-slate-800');
+        });
+        btn.classList.add('ring-2', 'ring-indigo-500', 'bg-slate-700');
+        btn.classList.remove('bg-slate-800');
+      });
+    });
+  }
+
+  // Style tab handlers
+  document.querySelectorAll('.style-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const style = (tab as HTMLElement).dataset.style!;
+
+      // Update tabs
+      document.querySelectorAll('.style-tab').forEach((t) => {
+        t.classList.remove('bg-indigo-600', 'text-white');
+        t.classList.add('bg-slate-700', 'text-slate-300');
+      });
+      tab.classList.add('bg-indigo-600', 'text-white');
+      tab.classList.remove('bg-slate-700', 'text-slate-300');
+
+      // Update grid
+      updateAvatarGrid(style);
+      (window as any).__selectedAvatarStyle = style;
+    });
+  });
+
+  // Randomize button
+  document.getElementById('randomize-avatar-btn')?.addEventListener('click', () => {
+    const randomStyle = funStyles[Math.floor(Math.random() * funStyles.length)];
+    const randomSeed = `random-${Date.now()}`;
+
+    // Update style tab
+    document.querySelectorAll('.style-tab').forEach((t) => {
+      t.classList.remove('bg-indigo-600', 'text-white');
+      t.classList.add('bg-slate-700', 'text-slate-300');
+      if ((t as HTMLElement).dataset.style === randomStyle) {
+        t.classList.add('bg-indigo-600', 'text-white');
+        t.classList.remove('bg-slate-700', 'text-slate-300');
+      }
+    });
+
+    // Update grid and preview
+    updateAvatarGrid(randomStyle);
+
+    const preview = document.getElementById('avatar-preview') as HTMLImageElement;
+    if (preview) {
+      preview.src = getAvatarUrl(randomStyle, randomSeed, 80);
+    }
+
+    (window as any).__selectedAvatarStyle = randomStyle;
+    (window as any).__selectedAvatarSeed = randomSeed;
+  });
+
+  // Initial binding
+  bindAvatarOptions();
+</script>

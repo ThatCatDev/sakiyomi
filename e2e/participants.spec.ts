@@ -47,7 +47,8 @@ test.describe('Room Participants', () => {
     // Should appear in participants list
     await expect(page.locator('#participants-list')).toBeVisible();
     await expect(page.locator('#participants-list li')).toHaveCount(1);
-    await expect(page.locator('text=(you)')).toBeVisible();
+    // Current user has a star indicator
+    await expect(page.locator('#participants-list .current-user-indicator')).toBeVisible();
   });
 
   test('should show error when joining with empty name', async ({ page }) => {
@@ -159,7 +160,7 @@ test.describe('Room Participants', () => {
     await context2.close();
   });
 
-  test('should display participant avatar with initial', async ({ page }) => {
+  test('should display participant avatar with DiceBear image', async ({ page }) => {
     await page.goto('/');
 
     // Create and join room
@@ -168,9 +169,11 @@ test.describe('Room Participants', () => {
     await page.fill('input[name="name"]', 'Alice');
     await page.click('button:has-text("Join Room")');
 
-    // Should show avatar with "A" initial in sidebar
-    const avatar = page.locator('#participants-list .bg-indigo-600\\/80');
+    // Should show DiceBear avatar image in sidebar
+    const avatar = page.locator('#participants-list .participant-avatar');
     await expect(avatar).toBeVisible();
-    await expect(avatar).toContainText('A');
+    // Avatar should be a DiceBear image
+    const src = await avatar.getAttribute('src');
+    expect(src).toContain('api.dicebear.com');
   });
 });

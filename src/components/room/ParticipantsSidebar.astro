@@ -1,5 +1,6 @@
 ---
 import type { Participant, VotingStatus } from '../../lib/room/types';
+import { getAvatarUrl } from '../../lib/room/types';
 import ParticipantItem from './ParticipantItem.astro';
 
 interface Props {
@@ -11,6 +12,11 @@ interface Props {
 }
 
 const { currentParticipant, participants, votingStatus, isManager, showVotes } = Astro.props;
+
+// Get avatar URL for current user
+const currentAvatarStyle = currentParticipant?.avatar_style || 'adventurer';
+const currentAvatarSeed = currentParticipant?.avatar_seed || currentParticipant?.name || 'default';
+const currentAvatarUrl = getAvatarUrl(currentAvatarStyle, currentAvatarSeed, 40);
 ---
 
 <div class="w-72 border-l border-slate-800 bg-slate-900/50 flex flex-col flex-shrink-0 hidden lg:flex">
@@ -46,9 +52,25 @@ const { currentParticipant, participants, votingStatus, isManager, showVotes } =
         </div>
       </div>
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
-          <span class="text-white font-medium">{currentParticipant.name.charAt(0).toUpperCase()}</span>
-        </div>
+        <button
+          id="change-avatar-btn"
+          class="relative w-10 h-10 rounded-full overflow-hidden group"
+          title="Change avatar"
+        >
+          <img
+            id="current-user-avatar"
+            src={currentAvatarUrl}
+            alt={currentParticipant.name}
+            class="w-full h-full object-cover"
+            data-avatar-style={currentAvatarStyle}
+            data-avatar-seed={currentAvatarSeed}
+          />
+          <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </div>
+        </button>
         <span class="text-white font-medium" id="current-user-name">{currentParticipant.name}</span>
       </div>
 
