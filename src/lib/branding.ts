@@ -12,25 +12,25 @@ const BRAND_CONFIG: Record<string, BrandConfig> = {
   'storypoint-estimate.com': {
     name: 'Storypoint Estimate',
     shortName: 'SP Estimate',
-    tagline: 'Estimate stories together',
-    description: 'Free real-time story point estimation tool for agile teams. Fast, collaborative sprint planning with your team.',
-    keywords: ['story points', 'agile estimation', 'sprint planning', 'scrum', 'team collaboration', 'story estimation'],
+    tagline: 'Free Online Story Point Estimation',
+    description: 'Free online story point estimation tool for agile teams. No signup required. Real-time scrum poker for sprint planning and team collaboration.',
+    keywords: ['planning poker', 'planning poker online', 'scrum poker', 'story points', 'agile estimation', 'sprint planning', 'story point estimation', 'pointing poker', 'free planning poker', 'online estimation tool', 'scrum estimation', 'agile team tools'],
   },
   'www.storypoint-estimate.com': {
     name: 'Storypoint Estimate',
     shortName: 'SP Estimate',
-    tagline: 'Estimate stories together',
-    description: 'Free real-time story point estimation tool for agile teams. Fast, collaborative sprint planning with your team.',
-    keywords: ['story points', 'agile estimation', 'sprint planning', 'scrum', 'team collaboration', 'story estimation'],
+    tagline: 'Free Online Story Point Estimation',
+    description: 'Free online story point estimation tool for agile teams. No signup required. Real-time scrum poker for sprint planning and team collaboration.',
+    keywords: ['planning poker', 'planning poker online', 'scrum poker', 'story points', 'agile estimation', 'sprint planning', 'story point estimation', 'pointing poker', 'free planning poker', 'online estimation tool', 'scrum estimation', 'agile team tools'],
   },
 };
 
 const DEFAULT_BRAND: BrandConfig = {
   name: 'Sakiyomi',
   shortName: 'Sakiyomi',
-  tagline: 'Estimate stories together',
-  description: 'Free real-time story point estimation tool for agile teams. Fast, collaborative sprint planning with your team.',
-  keywords: ['story points', 'agile estimation', 'sprint planning', 'scrum', 'team collaboration', 'story estimation'],
+  tagline: 'Free Online Story Point Estimation',
+  description: 'Free online story point estimation tool for agile teams. No signup required. Real-time scrum poker for sprint planning and team collaboration.',
+  keywords: ['planning poker', 'planning poker online', 'scrum poker', 'story points', 'agile estimation', 'sprint planning', 'story point estimation', 'pointing poker', 'free planning poker', 'online estimation tool', 'scrum estimation', 'agile team tools'],
 };
 
 export function getBrandConfig(hostname: string): BrandConfig {

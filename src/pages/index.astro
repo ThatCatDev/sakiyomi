@@ -16,6 +16,7 @@ const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   "name": brand.name,
+  "alternateName": "Planning Poker Online",
   "description": brand.description,
   "url": Astro.url.origin,
   "applicationCategory": "BusinessApplication",
@@ -26,10 +27,13 @@ const structuredData = {
     "priceCurrency": "USD"
   },
   "featureList": [
+    "Free planning poker",
     "Real-time collaboration",
     "Story point estimation",
-    "Team voting",
-    "Sprint planning"
+    "Scrum poker voting",
+    "Sprint planning",
+    "No signup required",
+    "Agile team estimation"
   ]
 };
 ---
@@ -72,12 +76,12 @@ const structuredData = {
     <section class="py-20 px-4">
       <div class="max-w-4xl mx-auto text-center">
         <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
-          Estimate stories<br />
-          <span class="text-indigo-400">together</span>
+          Free Planning Poker<br />
+          <span class="text-indigo-400">Online</span>
         </h1>
         <p class="text-xl text-slate-400 mb-10 max-w-2xl mx-auto">
-          A simple, real-time story estimation tool for agile teams.
-          Make sprint planning fast and collaborative.
+          Real-time story point estimation for agile teams.
+          No signup required. Start your scrum poker session in seconds.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
