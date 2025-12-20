@@ -10,6 +10,8 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
 
   const formData = await request.formData();
   const name = formData.get('name') as string;
+  const avatarStyle = (formData.get('avatar_style') as string) || 'adventurer';
+  const avatarSeed = (formData.get('avatar_seed') as string) || crypto.randomUUID();
 
   if (!name || name.trim().length === 0) {
     return new Response(JSON.stringify({ error: 'Name is required' }), {
@@ -60,10 +62,15 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
     .single();
 
   if (existing) {
-    // Update existing participant name (keep existing role)
+    // Update existing participant name and avatar (keep existing role)
     const { error } = await supabase
       .from('room_participants')
-      .update({ name: name.trim(), user_id: user?.id || null })
+      .update({
+        name: name.trim(),
+        user_id: user?.id || null,
+        avatar_style: avatarStyle,
+        avatar_seed: avatarSeed,
+      })
       .eq('id', existing.id);
 
     if (error) {
@@ -73,7 +80,7 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
       });
     }
   } else {
-    // Create new participant with role
+    // Create new participant with role and avatar
     const { error } = await supabase
       .from('room_participants')
       .insert({
@@ -82,6 +89,8 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
         user_id: user?.id || null,
         session_id: sessionId,
         role,
+        avatar_style: avatarStyle,
+        avatar_seed: avatarSeed,
       });
 
     if (error) {

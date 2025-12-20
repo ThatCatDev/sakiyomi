@@ -1,16 +1,64 @@
 ---
+import { getAvatarUrl } from '../../lib/room/types';
+
 interface Props {
   roomId: string;
 }
 
 const { roomId } = Astro.props;
+
+// Generate random initial avatar
+const funStyles = [
+  'adventurer',
+  'big-smile',
+  'bottts',
+  'fun-emoji',
+  'lorelei',
+  'micah',
+  'notionists',
+  'pixel-art',
+  'thumbs',
+  'avataaars',
+];
+const randomStyle = funStyles[Math.floor(Math.random() * funStyles.length)];
+const randomSeed = `join-${Date.now()}`;
+const initialAvatarUrl = getAvatarUrl(randomStyle, randomSeed, 80);
 ---
 
 <div class="max-w-md mx-auto mt-20">
   <div class="bg-slate-800 rounded-2xl p-8 border border-slate-700" id="join-section">
     <h2 class="text-2xl font-semibold text-white mb-2 text-center">Join this room</h2>
-    <p class="text-slate-400 text-center mb-6">Enter your name to start voting</p>
-    <form action={`/api/rooms/${roomId}/join`} method="POST" id="join-form" class="space-y-4">
+    <p class="text-slate-400 text-center mb-6">Pick your avatar and enter your name</p>
+
+    <form action={`/api/rooms/${roomId}/join`} method="POST" id="join-form" class="space-y-6">
+      <!-- Avatar Selection -->
+      <div class="flex flex-col items-center gap-3">
+        <div class="relative group">
+          <img
+            id="join-avatar-preview"
+            src={initialAvatarUrl}
+            alt="Your avatar"
+            class="w-24 h-24 rounded-full bg-slate-700 cursor-pointer transition-transform hover:scale-105"
+          />
+          <button
+            type="button"
+            id="randomize-join-avatar"
+            class="absolute -bottom-1 -right-1 w-8 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white transition-colors shadow-lg"
+            title="Randomize avatar"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+        <p class="text-slate-500 text-xs">Click to randomize</p>
+      </div>
+
+      <!-- Hidden avatar fields -->
+      <input type="hidden" name="avatar_style" id="join-avatar-style" value={randomStyle} />
+      <input type="hidden" name="avatar_seed" id="join-avatar-seed" value={randomSeed} />
+
+      <!-- Name input -->
       <input
         type="text"
         name="name"
@@ -19,6 +67,7 @@ const { roomId } = Astro.props;
         placeholder="Your name"
         class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center text-lg"
       />
+
       <button
         type="submit"
         class="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors"
@@ -29,3 +78,54 @@ const { roomId } = Astro.props;
     </form>
   </div>
 </div>
+
+<script>
+  const funStyles = [
+    'adventurer',
+    'big-smile',
+    'bottts',
+    'fun-emoji',
+    'lorelei',
+    'micah',
+    'notionists',
+    'pixel-art',
+    'thumbs',
+    'avataaars',
+    'big-ears',
+    'croodles',
+    'open-peeps',
+    'personas',
+    'miniavs',
+    'shapes',
+  ];
+
+  function getAvatarUrl(style: string, seed: string, size = 80): string {
+    return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&size=${size}`;
+  }
+
+  function randomizeAvatar() {
+    const randomStyle = funStyles[Math.floor(Math.random() * funStyles.length)];
+    const randomSeed = `join-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    const preview = document.getElementById('join-avatar-preview') as HTMLImageElement;
+    const styleInput = document.getElementById('join-avatar-style') as HTMLInputElement;
+    const seedInput = document.getElementById('join-avatar-seed') as HTMLInputElement;
+
+    if (preview && styleInput && seedInput) {
+      preview.src = getAvatarUrl(randomStyle, randomSeed, 80);
+      styleInput.value = randomStyle;
+      seedInput.value = randomSeed;
+    }
+  }
+
+  // Randomize on button click
+  document.getElementById('randomize-join-avatar')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    randomizeAvatar();
+  });
+
+  // Also randomize when clicking the avatar itself
+  document.getElementById('join-avatar-preview')?.addEventListener('click', () => {
+    randomizeAvatar();
+  });
+</script>
