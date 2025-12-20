@@ -11,7 +11,7 @@ test.describe('Full Signup Flow', () => {
 
     // Step 1: Go to signup page
     await page.goto('/signup');
-    await expect(page.locator('h1')).toHaveText('Story Poker');
+    await expect(page.locator('h1')).toHaveText('Sakiyomi');
 
     // Step 2: Fill out signup form
     await page.fill('input[name="email"]', testEmail);

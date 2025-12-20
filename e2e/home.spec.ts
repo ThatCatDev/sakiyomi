@@ -6,12 +6,12 @@ test.describe('Home Page', () => {
       await page.goto('/');
 
       // Header
-      await expect(page.locator('text=Story Poker').first()).toBeVisible();
+      await expect(page.locator('text=Sakiyomi').first()).toBeVisible();
 
       // Hero section
       await expect(page.locator('text=Estimate stories')).toBeVisible();
       await expect(page.locator('span.text-indigo-400:has-text("together")')).toBeVisible();
-      await expect(page.locator('text=A simple, real-time planning poker tool')).toBeVisible();
+      await expect(page.locator('text=A simple, real-time story estimation tool')).toBeVisible();
 
       // CTAs - Create Room available for everyone
       await expect(page.locator('button:has-text("Create Room")')).toBeVisible();

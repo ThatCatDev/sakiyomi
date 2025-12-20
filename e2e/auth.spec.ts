@@ -4,7 +4,7 @@ test.describe('Authentication', () => {
   test('should show home page for unauthenticated users', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL('/');
-    await expect(page.locator('text=Story Poker').first()).toBeVisible();
+    await expect(page.locator('text=Sakiyomi').first()).toBeVisible();
     await expect(page.locator('button:has-text("Create Room")')).toBeVisible();
   });
 
@@ -16,7 +16,7 @@ test.describe('Authentication', () => {
   test('should display login page correctly', async ({ page }) => {
     await page.goto('/login');
 
-    await expect(page.locator('h1')).toHaveText('Story Poker');
+    await expect(page.locator('h1')).toHaveText('Sakiyomi');
     await expect(page.locator('text=Sign in to your account')).toBeVisible();
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
@@ -27,7 +27,7 @@ test.describe('Authentication', () => {
   test('should display signup page correctly', async ({ page }) => {
     await page.goto('/signup');
 
-    await expect(page.locator('h1')).toHaveText('Story Poker');
+    await expect(page.locator('h1')).toHaveText('Sakiyomi');
     await expect(page.locator('text=Create your account')).toBeVisible();
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();

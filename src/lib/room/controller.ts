@@ -5,9 +5,16 @@ import { RoomBloc, type RoomEvent } from './bloc';
 import type { Participant, VotingStatus } from './types';
 import { getAvatarUrl } from './types';
 
+// Spinner SVG for loading states (centered with flex)
+const SPINNER_SVG = `<svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+</svg>`;
+
 export class RoomController {
   private bloc: RoomBloc;
   private pendingKickParticipantId: string | null = null;
+  private buttonStates: Map<HTMLElement, { html: string; disabled: boolean }> = new Map();
 
   // DOM Element references
   private elements: {
@@ -218,6 +225,43 @@ export class RoomController {
     window.addEventListener('beforeunload', () => {
       this.bloc.dispose();
     });
+  }
+
+  // Loading state helpers
+  private setLoading(button: HTMLElement | null, loading: boolean): void {
+    if (!button) return;
+
+    if (loading) {
+      // Save current state
+      this.buttonStates.set(button, {
+        html: button.innerHTML,
+        disabled: button.hasAttribute('disabled'),
+      });
+      // Set loading state
+      button.innerHTML = SPINNER_SVG;
+      button.setAttribute('disabled', 'true');
+      button.classList.add('opacity-75', 'cursor-wait');
+    } else {
+      // Restore previous state
+      const state = this.buttonStates.get(button);
+      if (state) {
+        button.innerHTML = state.html;
+        if (!state.disabled) {
+          button.removeAttribute('disabled');
+        }
+        this.buttonStates.delete(button);
+      }
+      button.classList.remove('opacity-75', 'cursor-wait');
+    }
+  }
+
+  private async withLoading<T>(button: HTMLElement | null, action: () => Promise<T>): Promise<T> {
+    this.setLoading(button, true);
+    try {
+      return await action();
+    } finally {
+      this.setLoading(button, false);
+    }
   }
 
   private bindPromoteButtons(): void {
@@ -802,10 +846,8 @@ export class RoomController {
   }
 
   private async handlePromoteClick(participantId: string): Promise<void> {
-    const success = await this.bloc.promoteToManager(participantId);
-    if (!success) {
-      // Error already emitted by bloc
-    }
+    const button = document.querySelector(`.promote-btn[data-participant-id="${participantId}"]`) as HTMLElement;
+    await this.withLoading(button, () => this.bloc.promoteToManager(participantId));
   }
 
   private updateParticipantCount(): void {
@@ -999,20 +1041,20 @@ export class RoomController {
 
   private async handleStartVoting(): Promise<void> {
     const topic = this.elements.topicInput?.value || '';
-    await this.bloc.startVoting(topic);
+    await this.withLoading(this.elements.startVotingBtn, () => this.bloc.startVoting(topic));
   }
 
   private async handleRevealVotes(): Promise<void> {
-    await this.bloc.revealVotes();
+    await this.withLoading(this.elements.revealVotesBtn, () => this.bloc.revealVotes());
   }
 
   private async handleResetVotes(): Promise<void> {
-    await this.bloc.resetVotes();
+    await this.withLoading(this.elements.resetVotesBtn, () => this.bloc.resetVotes());
   }
 
   private async handleNewRound(): Promise<void> {
     const topic = this.elements.nextTopicInput?.value || '';
-    const success = await this.bloc.startVoting(topic);
+    const success = await this.withLoading(this.elements.newRoundBtn, () => this.bloc.startVoting(topic));
     if (success && this.elements.nextTopicInput) {
       this.elements.nextTopicInput.value = '';
     }
@@ -1069,7 +1111,8 @@ export class RoomController {
     const name = this.elements.editNameInput?.value;
     if (!name) return;
 
-    const success = await this.bloc.updateName(name);
+    const submitBtn = this.elements.editNameForm?.querySelector('button[type="submit"]') as HTMLElement;
+    const success = await this.withLoading(submitBtn, () => this.bloc.updateName(name));
 
     if (success) {
       if (this.elements.currentUserName) this.elements.currentUserName.textContent = name;
@@ -1088,7 +1131,7 @@ export class RoomController {
   }
 
   private async handleLeaveRoom(): Promise<void> {
-    const success = await this.bloc.leaveRoom();
+    const success = await this.withLoading(this.elements.confirmLeaveBtn, () => this.bloc.leaveRoom());
     if (success) {
       window.location.reload();
     } else {
@@ -1237,11 +1280,13 @@ export class RoomController {
       return;
     }
 
-    const success = await this.bloc.updateSettings({
-      name,
-      showVotes,
-      voteOptions,
-    });
+    const success = await this.withLoading(this.elements.saveSettingsBtn, () =>
+      this.bloc.updateSettings({
+        name,
+        showVotes,
+        voteOptions,
+      })
+    );
 
     if (success) {
       this.closeSettingsModal();
@@ -1410,10 +1455,8 @@ export class RoomController {
   }
 
   private async handleDemoteClick(participantId: string): Promise<void> {
-    const success = await this.bloc.demoteFromManager(participantId);
-    if (!success) {
-      // Error already emitted by bloc
-    }
+    const button = document.querySelector(`.demote-btn[data-participant-id="${participantId}"]`) as HTMLElement;
+    await this.withLoading(button, () => this.bloc.demoteFromManager(participantId));
   }
 
   private handleKickClick(participantId: string): void {
@@ -1434,11 +1477,13 @@ export class RoomController {
     if (!this.pendingKickParticipantId) return;
 
     const participantId = this.pendingKickParticipantId;
-    this.closeKickModal();
 
-    const success = await this.bloc.kickParticipant(participantId);
-    if (!success) {
-      // Error already emitted by bloc
+    const success = await this.withLoading(this.elements.confirmKickBtn, () =>
+      this.bloc.kickParticipant(participantId)
+    );
+
+    if (success) {
+      this.closeKickModal();
     }
   }
 
@@ -1467,7 +1512,9 @@ export class RoomController {
       return;
     }
 
-    const success = await this.bloc.updateAvatar(style, seed);
+    const success = await this.withLoading(this.elements.saveAvatarBtn, () =>
+      this.bloc.updateAvatar(style, seed)
+    );
     if (success) {
       // Update the current user avatar in the sidebar
       if (this.elements.currentUserAvatar) {

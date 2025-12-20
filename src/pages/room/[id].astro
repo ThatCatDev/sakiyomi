@@ -253,10 +253,24 @@ const voteOptions = room.vote_options || ['0', '1', '2', '3', '5', '8', '13', '2
   } else {
     // Handle join form for users who haven't joined yet
     const joinForm = document.getElementById('join-form') as HTMLFormElement;
+    const joinButton = joinForm?.querySelector('button[type="submit"]') as HTMLButtonElement;
     const joinError = document.getElementById('join-error');
+
+    const spinnerSvg = `<svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>`;
 
     joinForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      const originalText = joinButton?.innerHTML;
+      if (joinButton) {
+        joinButton.innerHTML = spinnerSvg;
+        joinButton.disabled = true;
+      }
+      joinError?.classList.add('hidden');
+
       const formData = new FormData(joinForm);
 
       try {
@@ -272,6 +286,10 @@ const voteOptions = room.vote_options || ['0', '1', '2', '3', '5', '8', '13', '2
             joinError.textContent = result.error || 'Failed to join room';
             joinError.classList.remove('hidden');
           }
+          if (joinButton && originalText) {
+            joinButton.innerHTML = originalText;
+            joinButton.disabled = false;
+          }
           return;
         }
 
@@ -280,6 +298,10 @@ const voteOptions = room.vote_options || ['0', '1', '2', '3', '5', '8', '13', '2
         if (joinError) {
           joinError.textContent = 'Failed to join room. Please try again.';
           joinError.classList.remove('hidden');
+        }
+        if (joinButton && originalText) {
+          joinButton.innerHTML = originalText;
+          joinButton.disabled = false;
         }
       }
     });

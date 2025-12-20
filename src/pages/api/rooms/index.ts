@@ -42,5 +42,14 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     });
   }
 
+  // Return JSON for fetch requests, redirect for regular form submissions
+  const acceptHeader = request.headers.get('Accept') || '';
+  if (acceptHeader.includes('application/json') || request.headers.get('X-Requested-With')) {
+    return new Response(JSON.stringify({ id: room.id }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   return redirect(`/room/${room.id}`);
 };
