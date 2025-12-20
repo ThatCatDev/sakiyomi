@@ -20,9 +20,8 @@ export class RoomController {
     topicLabel: HTMLElement | null;
 
     // Status
-    statusWaiting: HTMLElement | null;
-    statusVoting: HTMLElement | null;
-    statusRevealed: HTMLElement | null;
+    statusBanner: HTMLElement | null;
+    statusText: HTMLElement | null;
 
     // Manager controls
     managerWaiting: HTMLElement | null;
@@ -113,9 +112,8 @@ export class RoomController {
       topicLabel: document.getElementById('topic-label'),
 
       // Status
-      statusWaiting: document.getElementById('status-waiting'),
-      statusVoting: document.getElementById('status-voting'),
-      statusRevealed: document.getElementById('status-revealed'),
+      statusBanner: document.getElementById('status-banner'),
+      statusText: document.getElementById('status-text'),
 
       // Manager controls
       managerWaiting: document.getElementById('manager-waiting'),
@@ -443,10 +441,50 @@ export class RoomController {
 
   // UI Update methods
   private updateVotingStatusUI(status: VotingStatus): void {
-    // Update status banners
-    this.elements.statusWaiting?.classList.toggle('hidden', status !== 'waiting');
-    this.elements.statusVoting?.classList.toggle('hidden', status !== 'voting');
-    this.elements.statusRevealed?.classList.toggle('hidden', status !== 'revealed');
+    // Update status banner
+    const statusConfig: Record<VotingStatus, { bg: string; dot: string; text: string; label: string; pulse: boolean }> = {
+      waiting: {
+        bg: 'bg-slate-800',
+        dot: 'bg-slate-500',
+        text: 'text-slate-400',
+        label: 'Waiting for manager to start voting',
+        pulse: false,
+      },
+      voting: {
+        bg: 'bg-indigo-900/50',
+        dot: 'bg-indigo-500',
+        text: 'text-indigo-300',
+        label: 'Voting in progress',
+        pulse: true,
+      },
+      revealed: {
+        bg: 'bg-green-900/50',
+        dot: 'bg-green-500',
+        text: 'text-green-300',
+        label: 'Votes revealed',
+        pulse: false,
+      },
+    };
+
+    const config = statusConfig[status];
+    if (this.elements.statusBanner) {
+      this.elements.statusBanner.setAttribute('data-status', status);
+      const inner = this.elements.statusBanner.querySelector('div');
+
+      if (inner) {
+        // Remove old bg classes and add new one
+        inner.className = `inline-flex items-center gap-2 px-4 py-2 rounded-full ${config.bg}`;
+        // Update the dot (first span inside inner)
+        const dot = inner.querySelector('span:first-child');
+        if (dot) {
+          dot.className = `w-2 h-2 rounded-full ${config.dot}${config.pulse ? ' animate-pulse' : ''}`;
+        }
+      }
+    }
+    if (this.elements.statusText) {
+      this.elements.statusText.textContent = config.label;
+      this.elements.statusText.className = `text-sm ${config.text}`;
+    }
 
     // Update manager controls
     this.elements.managerWaiting?.classList.toggle('hidden', status !== 'waiting');

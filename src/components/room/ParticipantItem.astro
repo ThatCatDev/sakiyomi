@@ -13,7 +13,7 @@ interface Props {
   showVotes?: boolean;
 }
 
-const { participant, isCurrentUser, votingStatus, canPromote = false, canDemote = false, canKick = false, isOnline = true, isViewerManager = false, showVotes = true } = Astro.props;
+const { participant, isCurrentUser, votingStatus, canPromote = false, canDemote = false, canKick = false, isOnline = true, isViewerManager = false, showVotes = false } = Astro.props;
 
 const initial = participant.name.charAt(0).toUpperCase();
 const hasVoted = !!participant.current_vote;

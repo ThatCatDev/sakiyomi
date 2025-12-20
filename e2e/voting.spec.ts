@@ -66,7 +66,7 @@ test.describe('Voting Flow', () => {
 
     // Should see status banner - initially waiting
     await expect(page.locator('#status-banner')).toBeVisible();
-    await expect(page.locator('#status-waiting')).toBeVisible();
+    await expect(page.locator('#status-banner[data-status="waiting"]')).toBeVisible();
   });
 
   test('should disable vote cards when not in voting state', async ({ page }) => {
