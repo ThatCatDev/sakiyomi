@@ -47,11 +47,12 @@ export class RoomBloc {
   public currentVote: string | null = null;
   public showVotes: boolean;
   public voteOptions: string[];
+  public appName: string;
 
   constructor(
     supabaseUrl: string,
     supabaseAnonKey: string,
-    initialState: RoomState & { currentVote?: string | null }
+    initialState: RoomState & { currentVote?: string | null; appName?: string }
   ) {
     this.supabase = createClient(supabaseUrl, supabaseAnonKey);
     this.roomId = initialState.roomId;
@@ -63,6 +64,7 @@ export class RoomBloc {
     this.currentVote = initialState.currentVote || null;
     this.showVotes = initialState.showVotes;
     this.voteOptions = initialState.voteOptions;
+    this.appName = initialState.appName || 'Sakiyomi';
   }
 
   // Event system

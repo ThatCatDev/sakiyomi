@@ -1,11 +1,13 @@
 ---
 import '../styles/global.css';
+import { getAppName } from '../lib/branding';
 
 interface Props {
   title?: string;
 }
 
-const { title = 'Sakiyomi' } = Astro.props;
+const appName = getAppName(Astro.url.hostname);
+const { title = appName } = Astro.props;
 ---
 
 <!doctype html>

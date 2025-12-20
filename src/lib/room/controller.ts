@@ -1325,7 +1325,7 @@ export class RoomController {
       this.elements.roomNameDisplay.textContent = name;
     }
     // Also update document title
-    document.title = `${name} - Sakiyomi`;
+    document.title = `${name} - ${this.bloc.appName}`;
   }
 
   private handleRoleChange(payload: { isManager: boolean }): void {
