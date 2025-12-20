@@ -1,0 +1,12 @@
+# Robots.txt for Sakiyomi / Storypoint Estimate
+
+User-agent: *
+Allow: /
+
+# Disallow private pages
+Disallow: /profile
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://sakiyomi.dev/sitemap.xml
+Sitemap: https://storypoint-estimate.com/sitemap.xml

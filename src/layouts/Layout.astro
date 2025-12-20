@@ -1,23 +1,68 @@
 ---
 import '../styles/global.css';
-import { getAppName } from '../lib/branding';
+import { getBrandConfig } from '../lib/branding';
 
 interface Props {
   title?: string;
+  description?: string;
+  image?: string;
+  noindex?: boolean;
 }
 
-const appName = getAppName(Astro.url.hostname);
-const { title = appName } = Astro.props;
+const brand = getBrandConfig(Astro.url.hostname);
+const {
+  title = brand.name,
+  description = brand.description,
+  image = '/og-image.svg',
+  noindex = false,
+} = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || Astro.url.origin);
+const imageURL = new URL(image, Astro.site || Astro.url.origin);
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
+		<link rel="canonical" href={canonicalURL} />
+
+		<!-- Primary Meta Tags -->
 		<title>{title}</title>
+		<meta name="title" content={title} />
+		<meta name="description" content={description} />
+		<meta name="keywords" content={brand.keywords.join(', ')} />
+		<meta name="author" content={brand.name} />
+		{noindex && <meta name="robots" content="noindex, nofollow" />}
+
+		<!-- Open Graph / Facebook -->
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={canonicalURL} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={imageURL} />
+		<meta property="og:site_name" content={brand.name} />
+
+		<!-- Twitter -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:url" content={canonicalURL} />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={imageURL} />
+
+		<!-- Theme Color -->
+		<meta name="theme-color" content="#0f172a" />
+		<meta name="msapplication-TileColor" content="#0f172a" />
+
+		<!-- Additional SEO -->
+		<meta name="application-name" content={brand.name} />
+		<meta name="apple-mobile-web-app-title" content={brand.shortName} />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="generator" content={Astro.generator} />
 	</head>
 	<body class="bg-slate-900 min-h-screen antialiased">
 		<slot />

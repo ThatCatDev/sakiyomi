@@ -2,16 +2,42 @@
 import Layout from '../layouts/Layout.astro';
 import UserMenu from '../components/UserMenu.astro';
 import { createSupabaseServerClient } from '../lib/supabase';
-import { getAppName } from '../lib/branding';
+import { getBrandConfig } from '../lib/branding';
 
 const cookieHeader = Astro.request.headers.get('Cookie') ?? '';
 const supabase = createSupabaseServerClient(Astro.cookies, cookieHeader);
 const { data: { user } } = await supabase.auth.getUser();
 
-const appName = getAppName(Astro.url.hostname);
+const brand = getBrandConfig(Astro.url.hostname);
+const appName = brand.name;
+
+// Structured data for SEO
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": brand.name,
+  "description": brand.description,
+  "url": Astro.url.origin,
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "featureList": [
+    "Real-time collaboration",
+    "Story point estimation",
+    "Team voting",
+    "Sprint planning"
+  ]
+};
 ---
 
-<Layout title={appName}>
+<Layout title={`${appName} - ${brand.tagline}`} description={brand.description}>
+  <!-- Structured Data -->
+  <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+
   <main class="min-h-screen">
     <!-- Navigation -->
     <nav class="border-b border-slate-800">
