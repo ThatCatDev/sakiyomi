@@ -73,7 +73,7 @@ const appName = getAppName(Astro.url.hostname);
 
 <Layout title={`${room.name} - ${appName}`}>
   <main class="min-h-screen flex flex-col">
-    <Header user={user} showRoomInfo={true} roomName={room.name} showSettings={!!currentParticipant}>
+    <Header user={user} showRoomInfo={true} roomName={room.name} showSettings={!!currentParticipant} participantCount={participants.length} roomUrl={roomUrl}>
       <div slot="extra" class="hidden md:flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700">
         <input
           type="text"
@@ -135,7 +135,7 @@ const appName = getAppName(Astro.url.hostname);
         )}
       </div>
 
-      <!-- Right Sidebar: Participants -->
+      <!-- Right Sidebar: Participants (desktop) -->
       <ParticipantsSidebar
         currentParticipant={currentParticipant}
         participants={participants}
@@ -144,6 +144,33 @@ const appName = getAppName(Astro.url.hostname);
         showVotes={showVotes}
       />
     </div>
+
+
+    <!-- Mobile Participants Drawer -->
+    {currentParticipant && (
+      <div id="mobile-participants-drawer" class="lg:hidden fixed inset-0 z-50 hidden">
+        <!-- Backdrop -->
+        <div id="drawer-backdrop" class="absolute inset-0 bg-black/50"></div>
+
+        <!-- Drawer -->
+        <div id="drawer-panel" class="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-slate-900 border-l border-slate-800 transform translate-x-full transition-transform duration-300">
+          <!-- Header -->
+          <div class="flex items-center justify-between p-4 border-b border-slate-800">
+            <h2 class="text-white font-semibold">Participants</h2>
+            <button id="close-drawer-btn" class="text-slate-400 hover:text-white p-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Participants list (will be synced with main sidebar via JS) -->
+          <div id="mobile-participants-content" class="overflow-y-auto h-full pb-20">
+            <!-- Content will be cloned from main sidebar -->
+          </div>
+        </div>
+      </div>
+    )}
   </main>
 
   <!-- Leave Room Modal -->

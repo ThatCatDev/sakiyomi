@@ -109,6 +109,15 @@ export class RoomController {
     avatarPreview: HTMLImageElement | null;
     cancelAvatarBtn: HTMLElement | null;
     saveAvatarBtn: HTMLElement | null;
+
+    // Mobile participants drawer
+    mobileParticipantsBtn: HTMLElement | null;
+    mobileParticipantCount: HTMLElement | null;
+    mobileParticipantsDrawer: HTMLElement | null;
+    drawerBackdrop: HTMLElement | null;
+    drawerPanel: HTMLElement | null;
+    closeDrawerBtn: HTMLElement | null;
+    mobileParticipantsContent: HTMLElement | null;
   };
 
   constructor(bloc: RoomBloc) {
@@ -209,6 +218,15 @@ export class RoomController {
       avatarPreview: document.getElementById('avatar-preview') as HTMLImageElement,
       cancelAvatarBtn: document.getElementById('cancel-avatar-btn'),
       saveAvatarBtn: document.getElementById('save-avatar-btn'),
+
+      // Mobile participants drawer
+      mobileParticipantsBtn: document.getElementById('mobile-participants-btn'),
+      mobileParticipantCount: document.getElementById('mobile-participant-count'),
+      mobileParticipantsDrawer: document.getElementById('mobile-participants-drawer'),
+      drawerBackdrop: document.getElementById('drawer-backdrop'),
+      drawerPanel: document.getElementById('drawer-panel'),
+      closeDrawerBtn: document.getElementById('close-drawer-btn'),
+      mobileParticipantsContent: document.getElementById('mobile-participants-content'),
     };
   }
 
@@ -387,6 +405,11 @@ export class RoomController {
     this.elements.changeAvatarBtn?.addEventListener('click', () => this.openAvatarModal());
     this.elements.cancelAvatarBtn?.addEventListener('click', () => this.closeAvatarModal());
     this.elements.saveAvatarBtn?.addEventListener('click', () => this.handleSaveAvatar());
+
+    // Mobile participants drawer
+    this.elements.mobileParticipantsBtn?.addEventListener('click', () => this.openMobileDrawer());
+    this.elements.closeDrawerBtn?.addEventListener('click', () => this.closeMobileDrawer());
+    this.elements.drawerBackdrop?.addEventListener('click', () => this.closeMobileDrawer());
   }
 
   private handleBlocEvent(event: RoomEvent): void {
@@ -856,6 +879,7 @@ export class RoomController {
       this.elements.participantCount.textContent = String(count);
     }
     this.elements.noParticipants?.classList.toggle('hidden', count > 0);
+    this.updateMobileParticipantCount();
   }
 
   // Color palette for vote groups - high contrast, easily distinguishable
@@ -1523,6 +1547,100 @@ export class RoomController {
         this.elements.currentUserAvatar.dataset.avatarSeed = seed;
       }
       this.closeAvatarModal();
+    }
+  }
+
+  // Mobile drawer methods
+  private openMobileDrawer(): void {
+    if (!this.elements.mobileParticipantsDrawer) return;
+
+    // Sync content from main sidebar
+    this.syncMobileDrawerContent();
+
+    // Show drawer
+    this.elements.mobileParticipantsDrawer.classList.remove('hidden');
+
+    // Animate in
+    requestAnimationFrame(() => {
+      this.elements.drawerPanel?.classList.remove('translate-x-full');
+    });
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+  }
+
+  private closeMobileDrawer(): void {
+    if (!this.elements.mobileParticipantsDrawer) return;
+
+    // Animate out
+    this.elements.drawerPanel?.classList.add('translate-x-full');
+
+    // Hide after animation
+    setTimeout(() => {
+      this.elements.mobileParticipantsDrawer?.classList.add('hidden');
+    }, 300);
+
+    // Restore body scroll
+    document.body.style.overflow = '';
+  }
+
+  private syncMobileDrawerContent(): void {
+    if (!this.elements.mobileParticipantsContent || !this.elements.participantsList) return;
+
+    // Clone the participants list content
+    const sidebarContent = document.querySelector('[data-participants-sidebar]');
+    if (sidebarContent) {
+      this.elements.mobileParticipantsContent.innerHTML = sidebarContent.innerHTML;
+
+      // Re-bind event listeners for the cloned content
+      this.elements.mobileParticipantsContent.querySelectorAll('.promote-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const participantId = (btn as HTMLElement).dataset.participantId;
+          if (participantId) this.handlePromoteClick(participantId);
+        });
+      });
+
+      this.elements.mobileParticipantsContent.querySelectorAll('.demote-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const participantId = (btn as HTMLElement).dataset.participantId;
+          if (participantId) this.handleDemoteClick(participantId);
+        });
+      });
+
+      this.elements.mobileParticipantsContent.querySelectorAll('.kick-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const participantId = (btn as HTMLElement).dataset.participantId;
+          if (participantId) this.handleKickClick(participantId);
+        });
+      });
+
+      // Bind edit name button
+      const editNameBtn = this.elements.mobileParticipantsContent.querySelector('#edit-name-btn');
+      editNameBtn?.addEventListener('click', () => this.showEditNameForm());
+
+      // Bind leave room button
+      const leaveRoomBtn = this.elements.mobileParticipantsContent.querySelector('#leave-room-btn');
+      leaveRoomBtn?.addEventListener('click', () => {
+        this.closeMobileDrawer();
+        this.openLeaveModal();
+      });
+
+      // Bind avatar change button
+      const changeAvatarBtn = this.elements.mobileParticipantsContent.querySelector('#change-avatar-btn');
+      changeAvatarBtn?.addEventListener('click', () => {
+        this.closeMobileDrawer();
+        this.openAvatarModal();
+      });
+    }
+  }
+
+  private updateMobileParticipantCount(): void {
+    const count = this.elements.participantsList?.querySelectorAll('li').length || 0;
+    if (this.elements.mobileParticipantCount) {
+      this.elements.mobileParticipantCount.textContent = String(count);
     }
   }
 }
