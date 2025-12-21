@@ -9,9 +9,9 @@ test.describe('Home Page', () => {
       await expect(page.locator('text=Sakiyomi').first()).toBeVisible();
 
       // Hero section
-      await expect(page.locator('text=Free Planning Poker')).toBeVisible();
-      await expect(page.locator('span.text-indigo-400:has-text("Online")')).toBeVisible();
-      await expect(page.locator('text=Real-time story point estimation')).toBeVisible();
+      await expect(page.locator('text=Free Story Point')).toBeVisible();
+      await expect(page.locator('span.text-indigo-400:has-text("Estimation")')).toBeVisible();
+      await expect(page.locator('text=Real-time agile estimation')).toBeVisible();
 
       // CTAs - Create Room available for everyone
       await expect(page.locator('button:has-text("Create Room")')).toBeVisible();

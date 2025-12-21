@@ -16,7 +16,7 @@ const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   "name": brand.name,
-  "alternateName": "Planning Poker Online",
+  "alternateName": "Story Point Estimation Tool",
   "description": brand.description,
   "url": Astro.url.origin,
   "applicationCategory": "BusinessApplication",
@@ -27,13 +27,12 @@ const structuredData = {
     "priceCurrency": "USD"
   },
   "featureList": [
-    "Free planning poker",
+    "Free story point estimation",
     "Real-time collaboration",
-    "Story point estimation",
-    "Scrum poker voting",
+    "Agile team voting",
     "Sprint planning",
     "No signup required",
-    "Agile team estimation"
+    "Scrum estimation"
   ]
 };
 ---
@@ -75,13 +74,19 @@ const structuredData = {
     <!-- Hero Section -->
     <section class="py-20 px-4">
       <div class="max-w-4xl mx-auto text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-sm font-medium mb-6">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+          </svg>
+          100% Free · No Signup Required
+        </div>
         <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
-          Free Planning Poker<br />
-          <span class="text-indigo-400">Online</span>
+          Free Story Point<br />
+          <span class="text-indigo-400">Estimation</span>
         </h1>
         <p class="text-xl text-slate-400 mb-10 max-w-2xl mx-auto">
-          Real-time story point estimation for agile teams.
-          No signup required. Start your scrum poker session in seconds.
+          Real-time agile estimation for your team.
+          No signup required. Start your estimation session in seconds.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
