@@ -1,7 +1,10 @@
-import { chromium, Browser, BrowserContext, Page } from '@playwright/test';
+import { chromium, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const SCREENSHOTS_DIR = path.join(__dirname, '../docs/src/assets/screenshots');
 const BASE_URL = 'http://localhost:4321';
 
