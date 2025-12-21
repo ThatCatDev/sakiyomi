@@ -28,13 +28,13 @@ const sizeClasses = {
   id={id}
   class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 modal-backdrop"
 >
-  <div class={`bg-slate-800 rounded-2xl border border-slate-700 w-full modal-content max-h-[90vh] overflow-y-auto ${sizeClasses[size]} ${noPadding ? '' : 'p-6'}`}>
+  <div class={`bg-surface-card rounded-2xl border border-border-default w-full modal-content max-h-[90vh] overflow-y-auto ${sizeClasses[size]} ${noPadding ? '' : 'p-6'}`}>
     {(title || showCloseButton) && (
       <div class:list={['flex items-center justify-between', { 'mb-2': title && !noPadding }]}>
-        {title && <h2 class="text-xl font-semibold text-white">{title}</h2>}
+        {title && <h2 class="text-xl font-semibold text-content-primary">{title}</h2>}
         {showCloseButton && (
           <button
-            class="close-modal-btn text-slate-400 hover:text-white transition-colors p-1 -mr-1"
+            class="close-modal-btn text-content-muted hover:text-content-primary transition-colors p-1 -mr-1"
             data-modal-id={id}
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +44,7 @@ const sizeClasses = {
         )}
       </div>
     )}
-    {description && <p class="text-slate-400 mb-6">{description}</p>}
+    {description && <p class="text-content-muted mb-6">{description}</p>}
     <slot />
   </div>
 </div>

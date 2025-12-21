@@ -22,8 +22,8 @@ const gridCols = voteOptions.length <= 5 ? 'grid-cols-5' : voteOptions.length <=
     {voteOptions.map((value) => (
       <button
         class:list={[
-          'vote-card aspect-[3/4] bg-slate-800 hover:bg-slate-700 border-2 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold text-white transition-all',
-          currentVote === value ? 'border-indigo-500 bg-indigo-600/20 selected' : 'border-slate-600 hover:border-indigo-500'
+          'vote-card aspect-[3/4] bg-surface-card hover:bg-surface-hover border-2 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold text-content-primary transition-all',
+          currentVote === value ? 'border-brand bg-brand-light selected' : 'border-border-default hover:border-brand'
         ]}
         data-vote={value}
         disabled={isDisabled}

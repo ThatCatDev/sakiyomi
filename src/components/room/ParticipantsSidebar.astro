@@ -19,21 +19,21 @@ const currentAvatarSeed = currentParticipant?.avatar_seed || currentParticipant?
 const currentAvatarUrl = getAvatarUrl(currentAvatarStyle, currentAvatarSeed, 40);
 ---
 
-<div class="w-72 border-l border-slate-800 bg-slate-900/50 flex flex-col flex-shrink-0 hidden lg:flex" data-participants-sidebar>
+<div class="w-72 border-l border-border-light bg-surface-primary/50 flex flex-col flex-shrink-0 hidden lg:flex" data-participants-sidebar>
   <!-- Your Status -->
   {currentParticipant && (
-    <div class="p-4 border-b border-slate-800">
+    <div class="p-4 border-b border-border-light">
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-2">
-          <span class="text-xs text-slate-500 uppercase tracking-wider">You</span>
+          <span class="text-xs text-content-muted uppercase tracking-wider">You</span>
           {isManager && (
-            <span class="text-xs bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded-full">Manager</span>
+            <span class="text-xs bg-brand-light text-brand px-2 py-0.5 rounded-full">Manager</span>
           )}
         </div>
         <div class="flex gap-1">
           <button
             id="edit-name-btn"
-            class="p-1 text-slate-400 hover:text-white transition-colors"
+            class="p-1 text-content-muted hover:text-content-primary transition-colors"
             title="Change name"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,7 +42,7 @@ const currentAvatarUrl = getAvatarUrl(currentAvatarStyle, currentAvatarSeed, 40)
           </button>
           <button
             id="leave-room-btn"
-            class="p-1 text-slate-400 hover:text-red-400 transition-colors"
+            class="p-1 text-content-muted hover:text-red-400 transition-colors"
             title="Leave room"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,7 +71,7 @@ const currentAvatarUrl = getAvatarUrl(currentAvatarStyle, currentAvatarSeed, 40)
             </svg>
           </div>
         </button>
-        <span class="text-white font-medium" id="current-user-name">{currentParticipant.name}</span>
+        <span class="text-content-primary font-medium" id="current-user-name">{currentParticipant.name}</span>
       </div>
 
       <!-- Edit Name Form (hidden by default) -->
@@ -82,13 +82,13 @@ const currentAvatarUrl = getAvatarUrl(currentAvatarStyle, currentAvatarSeed, 40)
           id="edit-name-input"
           required
           value={currentParticipant.name}
-          class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          class="w-full px-3 py-2 bg-surface-secondary border border-border-default rounded-lg text-content-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand"
         />
         <div class="flex gap-2">
-          <button type="submit" class="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg">
+          <button type="submit" class="flex-1 px-3 py-2 bg-brand hover:bg-brand-hover text-white text-sm rounded-lg">
             Save
           </button>
-          <button type="button" id="cancel-edit-btn" class="flex-1 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg">
+          <button type="button" id="cancel-edit-btn" class="flex-1 px-3 py-2 bg-surface-tertiary hover:bg-surface-hover text-content-primary text-sm rounded-lg">
             Cancel
           </button>
         </div>
@@ -100,8 +100,8 @@ const currentAvatarUrl = getAvatarUrl(currentAvatarStyle, currentAvatarSeed, 40)
   <!-- Participants List -->
   <div class="flex-1 overflow-y-auto p-4">
     <div class="flex items-center justify-between mb-3">
-      <span class="text-xs text-slate-500 uppercase tracking-wider">Participants</span>
-      <span class="text-xs text-slate-500" id="participant-count">{participants?.length || 0}</span>
+      <span class="text-xs text-content-muted uppercase tracking-wider">Participants</span>
+      <span class="text-xs text-content-muted" id="participant-count">{participants?.length || 0}</span>
     </div>
 
     <ul class="space-y-2" id="participants-list">
@@ -120,7 +120,7 @@ const currentAvatarUrl = getAvatarUrl(currentAvatarStyle, currentAvatarSeed, 40)
     </ul>
 
     <p
-      class="text-slate-500 text-sm text-center py-4"
+      class="text-content-muted text-sm text-center py-4"
       id="no-participants"
       class:list={[{ 'hidden': participants && participants.length > 0 }]}
     >

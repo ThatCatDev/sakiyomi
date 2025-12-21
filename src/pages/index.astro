@@ -45,181 +45,145 @@ const structuredData = {
     <Header user={user} />
 
     <!-- Hero Section -->
-    <section class="py-20 px-4">
-      <div class="max-w-4xl mx-auto text-center">
-        <div class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-sm font-medium mb-6">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-          </svg>
-          100% Free · No Signup Required
-        </div>
-        <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
-          Free Story Point<br />
-          <span class="text-indigo-400">Estimation</span>
-        </h1>
-        <p class="text-xl text-slate-400 mb-10 max-w-2xl mx-auto">
-          Real-time agile estimation for your team.
-          No signup required. Start your estimation session in seconds.
-        </p>
+    <section class="py-16 md:py-24 px-4">
+      <div class="max-w-6xl mx-auto">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <!-- Left: Content -->
+          <div>
+            <div class="inline-flex items-center gap-2 px-4 py-2 bg-success-light rounded-full text-success text-sm font-medium mb-6" style="background-color: var(--color-success-light); color: var(--color-success);">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              100% Free · No Signup Required
+            </div>
 
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <button id="create-room-btn" class="btn-press px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-colors text-lg">
-            Create Room
-          </button>
-          <button id="join-room-btn" class="btn-press px-8 py-4 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-colors text-lg">
-            Join Room
-          </button>
-        </div>
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-content-primary mb-6 leading-tight">
+              Real-time Story Point
+              <span class="gradient-text"> Estimation</span>
+            </h1>
 
-        <!-- Create Room Modal -->
-        <div id="create-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop">
-          <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 w-full max-w-md mx-4 modal-content">
-            <h2 class="text-xl font-semibold text-white mb-4">Create a Room</h2>
-            <form id="create-room-form" method="POST" action="/api/rooms" class="space-y-4">
-              <div>
-                <label for="room-name" class="block text-sm font-medium text-slate-400 mb-2">
-                  Room Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  id="room-name"
-                  required
-                  placeholder="e.g. Sprint Planning"
-                  class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
+            <p class="text-lg md:text-xl text-content-secondary mb-8 max-w-lg">
+              Streamline your agile estimation process with real-time collaboration. Perfect for distributed teams.
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+              <button id="create-room-btn" class="btn-press px-8 py-4 bg-brand hover:bg-brand-hover text-white font-semibold rounded-xl transition-colors text-lg shadow-lg shadow-indigo-500/25">
+                Create Room
+              </button>
+              <button id="join-room-btn" class="btn-press px-8 py-4 bg-surface-secondary hover:bg-surface-tertiary text-content-primary font-semibold rounded-xl transition-colors text-lg border border-border-default">
+                Join Room
+              </button>
+            </div>
+
+            <!-- Trust badges -->
+            <div class="flex flex-wrap items-center gap-6 mt-10 pt-10 border-t border-border-default">
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-brand" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-content-secondary text-sm">Real-time sync</span>
               </div>
-              <label for="is-permanent" class="flex items-center gap-3 cursor-pointer group">
-                <div class="relative">
-                  <input
-                    type="checkbox"
-                    name="is_permanent"
-                    id="is-permanent"
-                    class="sr-only peer"
-                  />
-                  <div class="w-10 h-6 bg-slate-700 rounded-full peer-checked:bg-indigo-600 transition-colors"></div>
-                  <div class="absolute left-1 top-1 w-4 h-4 bg-slate-400 rounded-full peer-checked:translate-x-4 peer-checked:bg-white transition-all"></div>
-                </div>
-                <span class="text-sm text-slate-300 group-hover:text-white transition-colors">
-                  Permanent room <span class="text-slate-500">(won't expire after inactivity)</span>
-                </span>
-              </label>
-              <div class="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  id="cancel-create-btn"
-                  class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  class="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors"
-                >
-                  Create
-                </button>
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-brand" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-content-secondary text-sm">No anchoring bias</span>
               </div>
-            </form>
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-brand" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-content-secondary text-sm">Open source</span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <!-- Join Room Modal -->
-        <div id="join-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop">
-          <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 w-full max-w-md mx-4 modal-content">
-            <h2 class="text-xl font-semibold text-white mb-4">Join a Room</h2>
-            <form id="join-room-form" class="space-y-4">
-              <div>
-                <label for="room-code" class="block text-sm font-medium text-slate-400 mb-2">
-                  Room URL or ID
-                </label>
-                <input
-                  type="text"
-                  name="room-code"
-                  id="room-code"
-                  required
-                  placeholder="Paste room URL or enter room ID"
-                  class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-              <p id="join-modal-error" class="text-red-400 text-sm hidden"></p>
-              <div class="flex gap-3">
-                <button
-                  type="button"
-                  id="cancel-join-btn"
-                  class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  class="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors"
-                >
-                  Join
-                </button>
-              </div>
-            </form>
+          <!-- Right: Illustration -->
+          <div class="hidden lg:flex items-center justify-center">
+            <div class="w-full max-w-lg float-animation">
+              <img
+                src="/hero-illustration.svg"
+                alt="Team collaborating on a scrum board"
+                class="w-full h-auto"
+              />
+            </div>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Features Section -->
-    <section class="py-20 px-4 border-t border-slate-800">
+    <section id="features" class="py-20 px-4 bg-surface-secondary">
       <div class="max-w-6xl mx-auto">
-        <h2 class="text-3xl font-bold text-white text-center mb-12">How it works</h2>
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-4xl font-bold text-content-primary mb-4">How it works</h2>
+          <p class="text-lg text-content-secondary max-w-2xl mx-auto">
+            Get your team aligned in three simple steps. No complex setup required.
+          </p>
+        </div>
 
         <div class="grid md:grid-cols-3 gap-8">
-          <div class="bg-slate-800 rounded-2xl p-8 border border-slate-700">
-            <div class="w-12 h-12 bg-indigo-600/20 rounded-xl flex items-center justify-center mb-4">
-              <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="feature-card bg-surface-card rounded-2xl p-8 border border-border-default">
+            <div class="w-14 h-14 bg-brand-light rounded-xl flex items-center justify-center mb-6" style="background-color: var(--color-brand-light);">
+              <svg class="w-7 h-7 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </div>
-            <h3 class="text-xl font-semibold text-white mb-2">Create a Room</h3>
-            <p class="text-slate-400">Start a new planning session and invite your team with a simple link.</p>
+            <h3 class="text-xl font-semibold text-content-primary mb-3">Create a Room</h3>
+            <p class="text-content-secondary">Start a new planning session and share the link with your team. No accounts needed.</p>
           </div>
 
-          <div class="bg-slate-800 rounded-2xl p-8 border border-slate-700">
-            <div class="w-12 h-12 bg-indigo-600/20 rounded-xl flex items-center justify-center mb-4">
-              <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="feature-card bg-surface-card rounded-2xl p-8 border border-border-default">
+            <div class="w-14 h-14 bg-brand-light rounded-xl flex items-center justify-center mb-6" style="background-color: var(--color-brand-light);">
+              <svg class="w-7 h-7 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <h3 class="text-xl font-semibold text-white mb-2">Vote Together</h3>
-            <p class="text-slate-400">Everyone picks their estimate privately. No anchoring bias.</p>
+            <h3 class="text-xl font-semibold text-content-primary mb-3">Vote Together</h3>
+            <p class="text-content-secondary">Everyone picks their estimate privately. Hidden votes prevent anchoring bias.</p>
           </div>
 
-          <div class="bg-slate-800 rounded-2xl p-8 border border-slate-700">
-            <div class="w-12 h-12 bg-indigo-600/20 rounded-xl flex items-center justify-center mb-4">
-              <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="feature-card bg-surface-card rounded-2xl p-8 border border-border-default">
+            <div class="w-14 h-14 bg-brand-light rounded-xl flex items-center justify-center mb-6" style="background-color: var(--color-brand-light);">
+              <svg class="w-7 h-7 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <h3 class="text-xl font-semibold text-white mb-2">Reveal & Discuss</h3>
-            <p class="text-slate-400">See all votes at once, discuss differences, and reach consensus.</p>
+            <h3 class="text-xl font-semibold text-content-primary mb-3">Reveal & Discuss</h3>
+            <p class="text-content-secondary">See all votes at once with stats and charts. Discuss outliers and reach consensus.</p>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- CTA Section -->
+    <section class="py-20 px-4">
+      <div class="max-w-4xl mx-auto text-center">
+        <h2 class="text-3xl md:text-4xl font-bold text-content-primary mb-4">Ready to estimate?</h2>
+        <p class="text-lg text-content-secondary mb-8">
+          Start your first session in seconds. Free forever, no credit card required.
+        </p>
+        <button id="create-room-btn-2" class="btn-press px-8 py-4 bg-brand hover:bg-brand-hover text-white font-semibold rounded-xl transition-colors text-lg shadow-lg shadow-indigo-500/25">
+          Create Your First Room
+        </button>
+      </div>
+    </section>
+
     <!-- Footer -->
-    <footer class="border-t border-slate-800 py-8 px-4">
+    <footer class="border-t border-border-default py-8 px-4">
       <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p class="text-slate-500 text-sm">
+        <p class="text-content-muted text-sm">
           Open source under MIT license
         </p>
         <div class="flex items-center gap-6">
-          <a
-            href="https://docs.storypoint-estimate.com"
-            class="text-slate-400 hover:text-white transition-colors"
-          >
+          <a href={brand.docsUrl} target="_blank" rel="noopener noreferrer" class="text-content-secondary hover:text-content-primary transition-colors">
             Docs
           </a>
           <a
             href="https://github.com/thatcatdev/sakiyomi"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-slate-400 hover:text-white transition-colors flex items-center gap-2"
+            class="text-content-secondary hover:text-content-primary transition-colors flex items-center gap-2"
           >
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
@@ -229,20 +193,114 @@ const structuredData = {
         </div>
       </div>
     </footer>
+
+    <!-- Create Room Modal -->
+    <div id="create-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop">
+      <div class="bg-surface-card rounded-2xl p-6 border border-border-default w-full max-w-md mx-4 modal-content">
+        <h2 class="text-xl font-semibold text-content-primary mb-4">Create a Room</h2>
+        <form id="create-room-form" method="POST" action="/api/rooms" class="space-y-4">
+          <div>
+            <label for="room-name" class="block text-sm font-medium text-content-secondary mb-2">
+              Room Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              id="room-name"
+              required
+              placeholder="e.g. Sprint Planning"
+              class="w-full px-4 py-3 bg-surface-secondary border border-border-default rounded-xl text-content-primary placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+          <label for="is-permanent" class="flex items-center gap-3 cursor-pointer group">
+            <div class="relative">
+              <input
+                type="checkbox"
+                name="is_permanent"
+                id="is-permanent"
+                class="sr-only peer"
+              />
+              <div class="w-10 h-6 bg-toggle-track rounded-full peer-checked:bg-brand transition-colors"></div>
+              <div class="absolute left-1 top-1 w-4 h-4 bg-toggle-knob rounded-full shadow peer-checked:translate-x-4 transition-all"></div>
+            </div>
+            <span class="text-sm text-content-secondary group-hover:text-content-primary transition-colors">
+              Permanent room <span class="text-content-muted">(won't expire)</span>
+            </span>
+          </label>
+          <div class="flex gap-3 pt-2">
+            <button
+              type="button"
+              id="cancel-create-btn"
+              class="flex-1 px-4 py-3 bg-surface-secondary hover:bg-surface-tertiary text-content-primary font-medium rounded-xl transition-colors border border-border-default"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="flex-1 px-4 py-3 bg-brand hover:bg-brand-hover text-white font-medium rounded-xl transition-colors"
+            >
+              Create
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Join Room Modal -->
+    <div id="join-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop">
+      <div class="bg-surface-card rounded-2xl p-6 border border-border-default w-full max-w-md mx-4 modal-content">
+        <h2 class="text-xl font-semibold text-content-primary mb-4">Join a Room</h2>
+        <form id="join-room-form" class="space-y-4">
+          <div>
+            <label for="room-code" class="block text-sm font-medium text-content-secondary mb-2">
+              Room URL or ID
+            </label>
+            <input
+              type="text"
+              name="room-code"
+              id="room-code"
+              required
+              placeholder="Paste room URL or enter room ID"
+              class="w-full px-4 py-3 bg-surface-secondary border border-border-default rounded-xl text-content-primary placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+          <p id="join-modal-error" class="text-red-500 text-sm hidden"></p>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              id="cancel-join-btn"
+              class="flex-1 px-4 py-3 bg-surface-secondary hover:bg-surface-tertiary text-content-primary font-medium rounded-xl transition-colors border border-border-default"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="flex-1 px-4 py-3 bg-brand hover:bg-brand-hover text-white font-medium rounded-xl transition-colors"
+            >
+              Join
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </main>
 </Layout>
 
 <script>
   // Create room modal
   const createRoomBtn = document.getElementById('create-room-btn');
+  const createRoomBtn2 = document.getElementById('create-room-btn-2');
   const createModal = document.getElementById('create-modal');
   const cancelCreateBtn = document.getElementById('cancel-create-btn');
   const roomNameInput = document.getElementById('room-name') as HTMLInputElement;
 
-  createRoomBtn?.addEventListener('click', () => {
+  function openCreateModal() {
     createModal?.classList.remove('hidden', 'closing');
     roomNameInput?.focus();
-  });
+  }
+
+  createRoomBtn?.addEventListener('click', openCreateModal);
+  createRoomBtn2?.addEventListener('click', openCreateModal);
 
   function closeCreateModal() {
     createModal?.classList.add('closing');
@@ -299,17 +357,15 @@ const structuredData = {
     }
   });
 
-  // Handle form submission
+  // Handle join form submission
   joinRoomForm?.addEventListener('submit', (e) => {
     e.preventDefault();
 
     const input = roomCodeInput?.value.trim();
     if (!input) return;
 
-    // Extract room ID from URL or use as-is
     let roomId = input;
 
-    // Check if it's a full URL
     try {
       const url = new URL(input);
       const pathMatch = url.pathname.match(/\/room\/([a-f0-9-]+)/i);
@@ -317,7 +373,6 @@ const structuredData = {
         roomId = pathMatch[1];
       }
     } catch {
-      // Not a URL, check if it's a valid UUID format
       const uuidMatch = input.match(/^[a-f0-9-]{36}$/i);
       if (!uuidMatch) {
         if (joinModalError) {
@@ -328,11 +383,10 @@ const structuredData = {
       }
     }
 
-    // Navigate to room
     window.location.href = `/room/${roomId}`;
   });
 
-  // Handle create room form submission with loading state
+  // Handle create room form submission
   const createRoomForm = document.getElementById('create-room-form') as HTMLFormElement;
   const createSubmitBtn = createRoomForm?.querySelector('button[type="submit"]') as HTMLButtonElement;
 
@@ -364,7 +418,7 @@ const structuredData = {
       const result = await response.json();
 
       if (!response.ok) {
-        alert(result.error || 'Failed to create room');
+        (window as any).showAlert(result.error || 'Failed to create room', { type: 'error' });
         if (createSubmitBtn && originalText) {
           createSubmitBtn.innerHTML = originalText;
           createSubmitBtn.disabled = false;
@@ -372,10 +426,9 @@ const structuredData = {
         return;
       }
 
-      // Redirect to the new room
       window.location.href = `/room/${result.id}`;
     } catch {
-      alert('Failed to create room. Please try again.');
+      (window as any).showAlert('Failed to create room. Please try again.', { type: 'error' });
       if (createSubmitBtn && originalText) {
         createSubmitBtn.innerHTML = originalText;
         createSubmitBtn.disabled = false;

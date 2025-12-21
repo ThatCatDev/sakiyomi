@@ -11,15 +11,15 @@ const initial = email.charAt(0).toUpperCase();
   <button
     type="button"
     id="user-menu-button"
-    class="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
+    class="flex items-center gap-2 text-content-secondary hover:text-content-primary transition-colors p-1 -m-1"
     aria-expanded="false"
     aria-haspopup="true"
   >
-    <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-sm font-medium text-white">
+    <div class="w-8 h-8 bg-brand rounded-full flex items-center justify-center text-sm font-medium text-white">
       {initial}
     </div>
-    <span class="hidden sm:inline">{email}</span>
-    <svg class="w-4 h-4 transition-transform" id="menu-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <span class="hidden sm:inline text-sm">{email}</span>
+    <svg class="w-4 h-4 transition-transform hidden sm:block" id="menu-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
     </svg>
   </button>
@@ -27,14 +27,14 @@ const initial = email.charAt(0).toUpperCase();
   <!-- Dropdown menu -->
   <div
     id="user-dropdown"
-    class="absolute right-0 mt-2 w-48 bg-slate-800 rounded-xl shadow-lg border border-slate-700 py-1 hidden z-50"
+    class="absolute right-0 mt-2 w-48 bg-surface-card rounded-xl shadow-lg border border-border-default py-1 hidden z-50"
     role="menu"
     aria-orientation="vertical"
     aria-labelledby="user-menu-button"
   >
     <a
       href="/profile"
-      class="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+      class="flex items-center gap-2 px-4 py-3 text-sm text-content-secondary hover:bg-surface-hover hover:text-content-primary transition-colors"
       role="menuitem"
     >
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,11 +42,11 @@ const initial = email.charAt(0).toUpperCase();
       </svg>
       Profile
     </a>
-    <hr class="my-1 border-slate-700" />
+    <hr class="my-1 border-border-default" />
     <form method="POST" action="/api/auth/signout" class="w-full">
       <button
         type="submit"
-        class="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors"
+        class="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-500 hover:bg-surface-hover transition-colors"
         role="menuitem"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -74,17 +74,17 @@ const appName = getAppName(Astro.url.hostname);
 <Layout title={`${room.name} - ${appName}`}>
   <main class="min-h-screen flex flex-col">
     <Header user={user} showRoomInfo={true} roomName={room.name} showSettings={!!currentParticipant} participantCount={participants.length} roomUrl={roomUrl}>
-      <div slot="extra" class="hidden md:flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700">
+      <div slot="extra" class="hidden md:flex items-center gap-2 bg-surface-secondary rounded-lg px-3 py-1.5 border border-border-default">
         <input
           type="text"
           readonly
           value={roomUrl}
           id="room-url"
-          class="w-48 bg-transparent text-white text-sm focus:outline-none"
+          class="w-48 bg-transparent text-content-primary text-sm focus:outline-none"
         />
         <button
           id="copy-btn"
-          class="text-slate-400 hover:text-white transition-colors"
+          class="text-content-muted hover:text-content-primary transition-colors"
           title="Copy link"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="copy-icon">
@@ -108,8 +108,8 @@ const appName = getAppName(Astro.url.hostname);
           <div class="max-w-2xl mx-auto">
             <!-- Topic Display -->
             <div class="text-center mb-6" id="topic-section">
-              <p class="text-slate-400 text-sm mb-1" id="topic-label" class:list={[{ 'hidden': !currentTopic }]}>Current topic</p>
-              <h2 class="text-2xl font-semibold text-white" id="current-topic-display">{currentTopic || 'No topic set'}</h2>
+              <p class="text-content-muted text-sm mb-1" id="topic-label" class:list={[{ 'hidden': !currentTopic }]}>Current topic</p>
+              <h2 class="text-2xl font-semibold text-content-primary" id="current-topic-display">{currentTopic || 'No topic set'}</h2>
             </div>
 
             <!-- Manager Controls -->
@@ -123,9 +123,9 @@ const appName = getAppName(Astro.url.hostname);
 
             <!-- Your Vote Display -->
             <div class="text-center mb-8" id="your-vote-section">
-              <p class="text-slate-400 text-sm mb-2">Your vote</p>
-              <div class="inline-flex items-center justify-center w-16 h-20 bg-slate-800 border-2 border-slate-600 rounded-xl">
-                <span class="text-2xl font-bold text-white" id="your-vote-display">{currentParticipant?.current_vote || '-'}</span>
+              <p class="text-content-muted text-sm mb-2">Your vote</p>
+              <div class="inline-flex items-center justify-center w-16 h-20 bg-surface-secondary border-2 border-border-default rounded-xl">
+                <span class="text-2xl font-bold text-content-primary" id="your-vote-display">{currentParticipant?.current_vote || '-'}</span>
               </div>
             </div>
 
@@ -153,11 +153,11 @@ const appName = getAppName(Astro.url.hostname);
         <div id="drawer-backdrop" class="absolute inset-0 bg-black/50"></div>
 
         <!-- Drawer -->
-        <div id="drawer-panel" class="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-slate-900 border-l border-slate-800 transform translate-x-full transition-transform duration-300">
+        <div id="drawer-panel" class="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-surface-card border-l border-border-default transform translate-x-full transition-transform duration-300">
           <!-- Header -->
-          <div class="flex items-center justify-between p-4 border-b border-slate-800">
-            <h2 class="text-white font-semibold">Participants</h2>
-            <button id="close-drawer-btn" class="text-slate-400 hover:text-white p-2">
+          <div class="flex items-center justify-between p-4 border-b border-border-default">
+            <h2 class="text-content-primary font-semibold">Participants</h2>
+            <button id="close-drawer-btn" class="text-content-muted hover:text-content-primary p-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>

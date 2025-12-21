@@ -9,23 +9,23 @@ const { votingStatus } = Astro.props;
 
 const statusConfig = {
   waiting: {
-    bg: 'bg-slate-800',
-    dot: 'bg-slate-500',
-    text: 'text-slate-400',
+    bg: 'bg-surface-secondary',
+    dot: 'bg-content-muted',
+    text: 'text-content-muted',
     label: 'Waiting for manager to start voting',
     pulse: false,
   },
   voting: {
-    bg: 'bg-indigo-900/50',
-    dot: 'bg-indigo-500',
-    text: 'text-indigo-300',
+    bg: 'bg-brand-light',
+    dot: 'bg-brand',
+    text: 'text-brand',
     label: 'Voting in progress',
     pulse: true,
   },
   revealed: {
-    bg: 'bg-green-900/50',
-    dot: 'bg-green-500',
-    text: 'text-green-300',
+    bg: 'bg-success-light',
+    dot: 'bg-success',
+    text: 'text-success',
     label: 'Votes revealed',
     pulse: false,
   },

@@ -1,5 +1,53 @@
 @import "tailwindcss";
 
+@theme {
+  /* Light theme colors (default) */
+  --color-surface-primary: #ffffff;
+  --color-surface-secondary: #f1f5f9;
+  --color-surface-tertiary: #e2e8f0;
+  --color-surface-card: #ffffff;
+  --color-surface-hover: #e2e8f0;
+  --color-border-default: #cbd5e1;
+  --color-border-light: #e2e8f0;
+  --color-content-primary: #0f172a;
+  --color-content-secondary: #475569;
+  --color-content-muted: #64748b;
+  --color-brand: #6366f1;
+  --color-brand-hover: #4f46e5;
+  --color-brand-light: #e0e7ff;
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+  --color-toggle-track: #cbd5e1;
+  --color-toggle-knob: #ffffff;
+}
+
+/* Dark theme overrides */
+.dark {
+  --color-surface-primary: #0f172a;
+  --color-surface-secondary: #1e293b;
+  --color-surface-tertiary: #334155;
+  --color-surface-card: #1e293b;
+  --color-surface-hover: #334155;
+  --color-border-default: #334155;
+  --color-border-light: #1e293b;
+  --color-content-primary: #f8fafc;
+  --color-content-secondary: #cbd5e1;
+  --color-content-muted: #64748b;
+  --color-brand: #818cf8;
+  --color-brand-hover: #6366f1;
+  --color-brand-light: rgba(99, 102, 241, 0.15);
+  --color-success: #4ade80;
+  --color-success-light: rgba(34, 197, 94, 0.15);
+  --color-toggle-track: #475569;
+  --color-toggle-knob: #ffffff;
+}
+
+/* Apply theme colors to body */
+body {
+  background-color: var(--color-surface-primary);
+  color: var(--color-content-primary);
+}
+
 /* Modal animations */
 @keyframes fade-in {
   from { opacity: 0; }
@@ -42,6 +90,11 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
 /* Modal backdrop */
@@ -87,4 +140,31 @@
 
 .btn-press:active {
   transform: scale(0.97);
+}
+
+/* Hero illustration float animation */
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-accent) 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Feature card hover */
+.feature-card {
+  transition: all 0.2s ease-out;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -12px rgba(99, 102, 241, 0.25);
+}
+
+.dark .feature-card:hover {
+  box-shadow: 0 12px 40px -12px rgba(99, 102, 241, 0.15);
 }

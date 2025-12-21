@@ -24,7 +24,7 @@ const presets = [
   <div class="space-y-6">
       <!-- Room Name -->
       <div>
-        <label for="settings-room-name" class="block text-sm font-medium text-slate-300 mb-2">
+        <label for="settings-room-name" class="block text-sm font-medium text-content-secondary mb-2">
           Room Name
         </label>
         <input
@@ -32,17 +32,17 @@ const presets = [
           id="settings-room-name"
           value={roomName}
           disabled={!isManager}
-          class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full px-3 py-2 bg-surface-primary border border-border-default rounded-lg text-content-primary text-sm placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-50 disabled:cursor-not-allowed"
         />
-        {!isManager && <p class="text-xs text-slate-500 mt-1">Only the manager can change the room name</p>}
+        {!isManager && <p class="text-xs text-content-muted mt-1">Only the manager can change the room name</p>}
       </div>
 
       <!-- Show Votes Toggle -->
       <div>
         <label class="flex items-center justify-between cursor-pointer group">
           <div>
-            <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Show vote indicators</span>
-            <p class="text-xs text-slate-500 mt-0.5" id="settings-show-votes-description">
+            <span class="text-sm font-medium text-content-secondary group-hover:text-content-primary transition-colors">Show vote indicators</span>
+            <p class="text-xs text-content-muted mt-0.5" id="settings-show-votes-description">
               {showVotes ? 'Vote indicators visible in sidebar' : 'Vote indicators hidden in sidebar'}
             </p>
           </div>
@@ -54,15 +54,15 @@ const presets = [
               checked={showVotes}
               disabled={!isManager}
             />
-            <div class="w-9 h-5 bg-slate-600 rounded-full peer peer-checked:bg-indigo-600 peer-focus:ring-2 peer-focus:ring-indigo-500 peer-disabled:opacity-50 transition-colors"></div>
-            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+            <div class="w-9 h-5 bg-toggle-track rounded-full peer peer-checked:bg-brand peer-focus:ring-2 peer-focus:ring-brand peer-disabled:opacity-50 transition-colors"></div>
+            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-toggle-knob rounded-full transition-transform peer-checked:translate-x-4"></div>
           </div>
         </label>
       </div>
 
       <!-- Vote Options -->
       <div>
-        <label class="block text-sm font-medium text-slate-300 mb-2">
+        <label class="block text-sm font-medium text-content-secondary mb-2">
           Vote Options
         </label>
 
@@ -72,7 +72,7 @@ const presets = [
             {presets.map((preset) => (
               <button
                 type="button"
-                class="preset-btn px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
+                class="preset-btn px-2 py-1 text-xs bg-surface-tertiary hover:bg-surface-hover text-content-secondary rounded transition-colors"
                 data-preset={JSON.stringify(preset.values)}
               >
                 {preset.name}
@@ -82,15 +82,15 @@ const presets = [
         )}
 
         <!-- Current options display -->
-        <div id="vote-options-display" class="flex flex-wrap gap-2 p-3 bg-slate-900 rounded-lg border border-slate-600 min-h-[60px]">
+        <div id="vote-options-display" class="flex flex-wrap gap-2 p-3 bg-surface-primary rounded-lg border border-border-default min-h-[60px]">
           {voteOptions.map((option) => (
             <span
-              class="vote-option-tag inline-flex items-center gap-1 px-2 py-1 bg-slate-700 text-white text-sm rounded"
+              class="vote-option-tag inline-flex items-center gap-1 px-2 py-1 bg-surface-tertiary text-content-primary text-sm rounded"
               data-value={option}
             >
               {option}
               {isManager && (
-                <button type="button" class="remove-option-btn text-slate-400 hover:text-red-400 transition-colors">
+                <button type="button" class="remove-option-btn text-content-muted hover:text-red-400 transition-colors">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -108,34 +108,34 @@ const presets = [
               id="new-vote-option"
               placeholder="Add option..."
               maxlength="5"
-              class="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="flex-1 px-3 py-2 bg-surface-primary border border-border-default rounded-lg text-content-primary text-sm placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-brand"
             />
             <button
               type="button"
               id="add-option-btn"
-              class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors"
+              class="px-3 py-2 bg-surface-tertiary hover:bg-surface-hover text-content-primary text-sm rounded-lg transition-colors"
             >
               Add
             </button>
           </div>
         )}
 
-        {!isManager && <p class="text-xs text-slate-500 mt-2">Only the manager can change vote options</p>}
+        {!isManager && <p class="text-xs text-content-muted mt-2">Only the manager can change vote options</p>}
       </div>
     </div>
 
     <!-- Footer -->
-    <div class="flex justify-end gap-2 pt-4 border-t border-slate-700 mt-6">
+    <div class="flex justify-end gap-2 pt-4 border-t border-border-default mt-6">
       <button
         id="cancel-settings-btn"
-        class="px-4 py-2 text-slate-300 hover:text-white text-sm transition-colors"
+        class="px-4 py-2 text-content-secondary hover:text-content-primary text-sm transition-colors"
       >
         Cancel
       </button>
       {isManager && (
         <button
           id="save-settings-btn"
-          class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+          class="px-4 py-2 bg-brand hover:bg-brand-hover text-white text-sm font-medium rounded-lg transition-colors"
         >
           Save Changes
         </button>

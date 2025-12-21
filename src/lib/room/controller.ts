@@ -458,8 +458,11 @@ export class RoomController {
   }
 
   private handleKicked(): void {
-    alert('You have been removed from this room by a manager.');
-    window.location.reload();
+    (window as any).showAlert('You have been removed from this room by a manager.', {
+      type: 'warning',
+      title: 'Removed from Room',
+      onClose: () => window.location.reload(),
+    });
   }
 
   private updatePresenceUI(onlineIds: string[]): void {
@@ -498,14 +501,14 @@ export class RoomController {
       if (indicator) {
         indicator.setAttribute('data-is-online', isOnline ? 'true' : 'false');
         if (isOnline) {
-          indicator.classList.remove('bg-slate-700');
-          indicator.classList.add('bg-green-500');
+          indicator.classList.remove('bg-surface-tertiary');
+          indicator.classList.add('bg-success');
           indicator.innerHTML = '<span></span>';
         } else {
-          indicator.classList.remove('bg-green-500');
-          indicator.classList.add('bg-slate-700');
+          indicator.classList.remove('bg-success');
+          indicator.classList.add('bg-surface-tertiary');
           indicator.innerHTML = `
-            <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-2.5 h-2.5 text-content-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M18.364 5.636a9 9 0 11-12.728 0M12 9v4" />
             </svg>
           `;
@@ -519,23 +522,23 @@ export class RoomController {
     // Update status banner
     const statusConfig: Record<VotingStatus, { bg: string; dot: string; text: string; label: string; pulse: boolean }> = {
       waiting: {
-        bg: 'bg-slate-800',
-        dot: 'bg-slate-500',
-        text: 'text-slate-400',
+        bg: 'bg-surface-secondary',
+        dot: 'bg-content-muted',
+        text: 'text-content-muted',
         label: 'Waiting for manager to start voting',
         pulse: false,
       },
       voting: {
-        bg: 'bg-indigo-900/50',
-        dot: 'bg-indigo-500',
-        text: 'text-indigo-300',
+        bg: 'bg-brand-light',
+        dot: 'bg-brand',
+        text: 'text-brand',
         label: 'Voting in progress',
         pulse: true,
       },
       revealed: {
-        bg: 'bg-green-900/50',
-        dot: 'bg-green-500',
-        text: 'text-green-300',
+        bg: 'bg-success-light',
+        dot: 'bg-success',
+        text: 'text-success',
         label: 'Votes revealed',
         pulse: false,
       },
@@ -600,7 +603,7 @@ export class RoomController {
       const el = indicator as HTMLElement;
       el.dataset.hasVote = 'false';
       el.dataset.vote = '';
-      el.className = 'vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 bg-slate-700/50 text-slate-500';
+      el.className = 'vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 bg-surface-tertiary/50 text-content-muted';
       el.innerHTML = '<span>-</span>';
     });
   }
@@ -610,7 +613,7 @@ export class RoomController {
       const el = indicator as HTMLElement;
       const vote = el.dataset.vote;
       if (vote) {
-        el.className = 'vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 bg-indigo-600/30 text-indigo-300';
+        el.className = 'vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 bg-brand-light text-brand';
         el.innerHTML = `<span class="vote-value">${vote}</span>`;
       }
     });
@@ -626,10 +629,10 @@ export class RoomController {
   private updateVoteCardSelection(vote: string): void {
     this.elements.voteCards.forEach((card) => {
       const isSelected = card.dataset.vote === vote;
-      card.classList.toggle('border-indigo-500', isSelected);
-      card.classList.toggle('bg-indigo-600/20', isSelected);
+      card.classList.toggle('border-brand', isSelected);
+      card.classList.toggle('bg-brand-light', isSelected);
       card.classList.toggle('selected', isSelected);
-      card.classList.toggle('border-slate-600', !isSelected);
+      card.classList.toggle('border-border-default', !isSelected);
     });
 
     if (this.elements.yourVoteDisplay) {
@@ -639,8 +642,8 @@ export class RoomController {
 
   private clearVoteCardSelection(): void {
     this.elements.voteCards.forEach((card) => {
-      card.classList.remove('border-indigo-500', 'bg-indigo-600/20', 'selected');
-      card.classList.add('border-slate-600');
+      card.classList.remove('border-brand', 'bg-brand-light', 'selected');
+      card.classList.add('border-border-default');
     });
   }
 
@@ -684,11 +687,11 @@ export class RoomController {
     if (currentRole !== participant.role) {
       el.setAttribute('data-participant-role', participant.role);
       const roleContainer = el.querySelector('.flex-1');
-      const existingBadge = roleContainer?.querySelector('.text-indigo-400');
+      const existingBadge = roleContainer?.querySelector('.text-brand');
 
       if (participant.role === 'manager' && !existingBadge) {
         const badge = document.createElement('span');
-        badge.className = 'text-xs text-indigo-400';
+        badge.className = 'text-xs text-brand';
         badge.textContent = 'Manager';
         roleContainer?.appendChild(badge);
       } else if (participant.role !== 'manager' && existingBadge) {
@@ -721,10 +724,10 @@ export class RoomController {
     // Update classes
     indicator.className = 'vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 ' +
       (showVoteValue
-        ? 'bg-indigo-600/30 text-indigo-300'
+        ? 'bg-brand-light text-brand'
         : hasVoted
-          ? 'bg-green-600/30 text-green-400'
-          : 'bg-slate-700/50 text-slate-500');
+          ? 'bg-success-light text-success'
+          : 'bg-surface-tertiary/50 text-content-muted');
 
     // Update content
     if (showVoteValue) {
@@ -751,7 +754,7 @@ export class RoomController {
     const li = document.createElement('li');
     // New participants are assumed online since they just joined
     const isOnline = this.bloc.onlineUserIds.has(participant.id);
-    li.className = `flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50${animate ? ' participant-enter' : ''}${!isOnline ? ' opacity-50' : ''}`;
+    li.className = `flex items-center gap-3 p-2 rounded-lg hover:bg-surface-hover/50${animate ? ' participant-enter' : ''}${!isOnline ? ' opacity-50' : ''}`;
     li.dataset.participantId = participant.id;
     li.dataset.participantRole = participant.role;
     li.setAttribute('data-is-online', isOnline ? 'true' : 'false');
@@ -771,10 +774,10 @@ export class RoomController {
     const showVoteValue = (this.bloc.isManager || this.bloc.votingStatus === 'revealed') && participant.current_vote;
     const shouldHideVoteIndicator = !this.bloc.isManager && !this.bloc.showVotes;
     const voteIndicatorClass = showVoteValue
-      ? 'bg-indigo-600/30 text-indigo-300'
+      ? 'bg-brand-light text-brand'
       : hasVoted
-        ? 'bg-green-600/30 text-green-400'
-        : 'bg-slate-700/50 text-slate-500';
+        ? 'bg-success-light text-success'
+        : 'bg-surface-tertiary/50 text-content-muted';
     const voteIndicatorContent = showVoteValue
       ? `<span class="vote-value">${participant.current_vote}</span>`
       : hasVoted
@@ -792,37 +795,37 @@ export class RoomController {
           loading="lazy"
         />
         ${isCurrentUser ? `
-          <div class="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full border-2 border-slate-900 flex items-center justify-center current-user-indicator">
+          <div class="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full border-2 border-surface-primary flex items-center justify-center current-user-indicator">
             <svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
           </div>
         ` : ''}
-        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 flex items-center justify-center online-indicator ${isOnline ? 'bg-green-500' : 'bg-slate-700'}" data-is-online="${isOnline}">
+        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-surface-primary flex items-center justify-center online-indicator ${isOnline ? 'bg-success' : 'bg-surface-tertiary'}" data-is-online="${isOnline}">
           ${isOnline ? '<span></span>' : `
-            <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-2.5 h-2.5 text-content-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M18.364 5.636a9 9 0 11-12.728 0M12 9v4" />
             </svg>
           `}
         </div>
       </div>
       <div class="flex-1 min-w-0">
-        <span class="text-white text-sm truncate block participant-name">${participant.name}</span>
-        ${participant.role === 'manager' ? '<span class="text-xs text-indigo-400">Manager</span>' : ''}
+        <span class="text-content-primary text-sm truncate block participant-name">${participant.name}</span>
+        ${participant.role === 'manager' ? '<span class="text-xs text-brand">Manager</span>' : ''}
       </div>
       <div class="vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 ${voteIndicatorClass}${shouldHideVoteIndicator ? ' hidden' : ''}" data-has-vote="${hasVoted}" data-vote="${participant.current_vote || ''}">
         ${voteIndicatorContent}
       </div>
       <div class="w-6 flex items-center justify-center flex-shrink-0 promote-demote-slot">
         ${canPromote ? `
-          <button class="promote-btn p-1 text-slate-400 hover:text-indigo-400 transition-colors" title="Make manager" data-participant-id="${participant.id}">
+          <button class="promote-btn p-1 text-content-muted hover:text-brand transition-colors" title="Make manager" data-participant-id="${participant.id}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
             </svg>
           </button>
         ` : ''}
         ${canDemote ? `
-          <button class="demote-btn p-1 text-slate-400 hover:text-red-400 transition-colors" title="${isCurrentUser ? 'Step down as manager' : 'Remove manager'}" data-participant-id="${participant.id}">
+          <button class="demote-btn p-1 text-content-muted hover:text-red-400 transition-colors" title="${isCurrentUser ? 'Step down as manager' : 'Remove manager'}" data-participant-id="${participant.id}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
@@ -831,7 +834,7 @@ export class RoomController {
       </div>
       <div class="w-6 flex items-center justify-center flex-shrink-0 kick-slot">
         ${canKick ? `
-          <button class="kick-btn p-1 text-slate-400 hover:text-red-400 transition-colors" title="Remove from room" data-participant-id="${participant.id}">
+          <button class="kick-btn p-1 text-content-muted hover:text-red-400 transition-colors" title="Remove from room" data-participant-id="${participant.id}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -952,14 +955,14 @@ export class RoomController {
 
       this.elements.voteResults.innerHTML = sortedParticipants
         .map(({ name, vote }) => `
-          <div class="flex items-center justify-between py-2 px-3 bg-slate-900/50 rounded-lg">
+          <div class="flex items-center justify-between py-2 px-3 bg-surface-secondary/50 rounded-lg">
             <div class="flex items-center gap-2">
-              <span class="w-7 h-7 bg-indigo-600/80 rounded-full flex items-center justify-center text-white text-sm font-medium">${name.charAt(0).toUpperCase()}</span>
-              <span class="text-white">${name}</span>
+              <span class="w-7 h-7 bg-brand/80 rounded-full flex items-center justify-center text-white text-sm font-medium">${name.charAt(0).toUpperCase()}</span>
+              <span class="text-content-primary">${name}</span>
             </div>
             ${vote
-              ? `<span class="text-lg font-bold text-indigo-400">${vote}</span>`
-              : `<span class="text-sm text-slate-500 italic">Didn't vote</span>`
+              ? `<span class="text-lg font-bold text-brand">${vote}</span>`
+              : `<span class="text-sm text-content-muted italic">Didn't vote</span>`
             }
           </div>
         `).join('');
@@ -1045,11 +1048,11 @@ export class RoomController {
 
       // Create legend item
       const legendItem = document.createElement('div');
-      legendItem.className = 'flex items-center gap-2 px-2 py-1 bg-slate-900/50 rounded';
+      legendItem.className = 'flex items-center gap-2 px-2 py-1 bg-surface-secondary/50 rounded';
       legendItem.innerHTML = `
         <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: ${color}"></span>
-        <span class="text-white font-medium">${vote}</span>
-        <span class="text-slate-400 text-sm">${Math.round(percentage * 100)}%</span>
+        <span class="text-content-primary font-medium">${vote}</span>
+        <span class="text-content-muted text-sm">${Math.round(percentage * 100)}%</span>
       `;
       this.elements.pieLegend!.appendChild(legendItem);
     });
@@ -1209,8 +1212,7 @@ export class RoomController {
 
   private showError(message: string): void {
     console.error('Room error:', message);
-    // Could show a toast notification here
-    alert(`Error: ${message}`);
+    (window as any).showAlert(message, { type: 'error' });
   }
 
   // Settings modal methods
@@ -1243,12 +1245,12 @@ export class RoomController {
     const isManager = this.bloc.isManager;
     this.elements.voteOptionsDisplay.innerHTML = options.map((option) => `
       <span
-        class="vote-option-tag inline-flex items-center gap-1 px-2 py-1 bg-slate-700 text-white text-sm rounded"
+        class="vote-option-tag inline-flex items-center gap-1 px-2 py-1 bg-surface-tertiary text-content-primary text-sm rounded"
         data-value="${option}"
       >
         ${option}
         ${isManager ? `
-          <button type="button" class="remove-option-btn text-slate-400 hover:text-red-400 transition-colors">
+          <button type="button" class="remove-option-btn text-content-muted hover:text-red-400 transition-colors">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -1295,12 +1297,12 @@ export class RoomController {
     const voteOptions = this.getCurrentVoteOptions();
 
     if (!name) {
-      alert('Room name cannot be empty');
+      (window as any).showAlert('Room name cannot be empty', { type: 'warning', title: 'Validation Error' });
       return;
     }
 
     if (voteOptions.length < 2) {
-      alert('At least 2 vote options are required');
+      (window as any).showAlert('At least 2 vote options are required', { type: 'warning', title: 'Validation Error' });
       return;
     }
 
@@ -1329,7 +1331,7 @@ export class RoomController {
 
     this.elements.voteCardsContainer.innerHTML = voteOptions.map((value) => `
       <button
-        class="vote-card aspect-[3/4] bg-slate-800 hover:bg-slate-700 border-2 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold text-white transition-all ${currentVote === value ? 'border-indigo-500 bg-indigo-600/20 selected' : 'border-slate-600 hover:border-indigo-500'}"
+        class="vote-card aspect-[3/4] bg-surface-card hover:bg-surface-hover border-2 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold text-content-primary transition-all ${currentVote === value ? 'border-brand bg-brand-light selected' : 'border-border-default hover:border-brand'}"
         data-vote="${value}"
         ${isDisabled ? 'disabled' : ''}
       >
@@ -1364,12 +1366,12 @@ export class RoomController {
       this.elements.openSettingsBtn?.classList.remove('hidden');
 
       // Update manager badge in "You" section
-      const youSection = document.querySelector('.border-b.border-slate-800');
-      if (youSection && !youSection.querySelector('.bg-indigo-600\\/30')) {
+      const youSection = document.querySelector('.border-b.border-border-light');
+      if (youSection && !youSection.querySelector('.bg-brand-light')) {
         const badgeContainer = youSection.querySelector('.flex.items-center.gap-2');
         if (badgeContainer) {
           const badge = document.createElement('span');
-          badge.className = 'text-xs bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded-full';
+          badge.className = 'text-xs bg-brand-light text-brand px-2 py-0.5 rounded-full';
           badge.textContent = 'Manager';
           badgeContainer.appendChild(badge);
         }
@@ -1391,8 +1393,8 @@ export class RoomController {
       this.elements.openSettingsBtn?.classList.add('hidden');
 
       // Remove manager badge from "You" section
-      const youSection = document.querySelector('.border-b.border-slate-800');
-      youSection?.querySelector('.bg-indigo-600\\/30')?.remove();
+      const youSection = document.querySelector('.border-b.border-border-light');
+      youSection?.querySelector('.bg-brand-light')?.remove();
 
       // Remove all promote/demote/kick buttons
       document.querySelectorAll('.promote-btn, .demote-btn, .kick-btn').forEach(btn => btn.remove());
@@ -1426,7 +1428,7 @@ export class RoomController {
     if (role === 'manager') {
       // Add demote button for managers
       const demoteBtn = document.createElement('button');
-      demoteBtn.className = 'demote-btn p-1 text-slate-400 hover:text-red-400 transition-colors';
+      demoteBtn.className = 'demote-btn p-1 text-content-muted hover:text-red-400 transition-colors';
       demoteBtn.title = isCurrentUser ? 'Step down as manager' : 'Remove manager';
       demoteBtn.dataset.participantId = participantId || '';
       demoteBtn.innerHTML = `
@@ -1443,7 +1445,7 @@ export class RoomController {
       // Add promote button for non-managers (except self)
       if (!isCurrentUser) {
         const promoteBtn = document.createElement('button');
-        promoteBtn.className = 'promote-btn p-1 text-slate-400 hover:text-indigo-400 transition-colors';
+        promoteBtn.className = 'promote-btn p-1 text-content-muted hover:text-brand transition-colors';
         promoteBtn.title = 'Make manager';
         promoteBtn.dataset.participantId = participantId || '';
         promoteBtn.innerHTML = `
@@ -1462,7 +1464,7 @@ export class RoomController {
     // Add kick button for all other participants (not self)
     if (!isCurrentUser) {
       const kickBtn = document.createElement('button');
-      kickBtn.className = 'kick-btn p-1 text-slate-400 hover:text-red-400 transition-colors';
+      kickBtn.className = 'kick-btn p-1 text-content-muted hover:text-red-400 transition-colors';
       kickBtn.title = 'Remove from room';
       kickBtn.dataset.participantId = participantId || '';
       kickBtn.innerHTML = `

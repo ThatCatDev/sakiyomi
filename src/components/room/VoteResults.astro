@@ -10,14 +10,14 @@ const { votingStatus } = Astro.props;
 
 <div
   id="results-section"
-  class:list={['bg-slate-800 rounded-xl p-6 border border-slate-700', { 'hidden': votingStatus !== 'revealed' }]}
+  class:list={['bg-surface-card rounded-xl p-6 border border-border-default', { 'hidden': votingStatus !== 'revealed' }]}
 >
   <!-- Header with average -->
   <div class="flex items-center justify-between mb-6">
-    <h3 class="text-lg font-semibold text-white">Results</h3>
+    <h3 class="text-lg font-semibold text-content-primary">Results</h3>
     <div class="flex items-center gap-2">
-      <span class="text-slate-400 text-sm">Average:</span>
-      <span class="text-2xl font-bold text-white" id="vote-average">-</span>
+      <span class="text-content-muted text-sm">Average:</span>
+      <span class="text-2xl font-bold text-content-primary" id="vote-average">-</span>
     </div>
   </div>
 

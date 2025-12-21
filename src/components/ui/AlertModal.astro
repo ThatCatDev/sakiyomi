@@ -1,0 +1,139 @@
+---
+// AlertModal - A reusable modal for displaying alerts/notifications
+// Can be opened programmatically via window.showAlert(message, type)
+---
+
+<div
+  id="alert-modal"
+  class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 modal-backdrop"
+>
+  <div class="bg-surface-card rounded-2xl border border-border-default w-full max-w-sm p-6 modal-content">
+    <div class="flex items-start gap-4">
+      <!-- Icon container -->
+      <div id="alert-icon" class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center">
+        <!-- Error icon (default) -->
+        <svg id="alert-icon-error" class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <!-- Info icon -->
+        <svg id="alert-icon-info" class="w-5 h-5 text-brand hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <!-- Success icon -->
+        <svg id="alert-icon-success" class="w-5 h-5 text-success hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <!-- Warning icon -->
+        <svg id="alert-icon-warning" class="w-5 h-5 text-amber-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+
+      <!-- Content -->
+      <div class="flex-1 min-w-0">
+        <h3 id="alert-title" class="text-lg font-semibold text-content-primary mb-1">Error</h3>
+        <p id="alert-message" class="text-content-secondary text-sm"></p>
+      </div>
+    </div>
+
+    <div class="mt-6 flex justify-end">
+      <button
+        id="alert-ok-btn"
+        type="button"
+        class="px-6 py-2 bg-brand hover:bg-brand-hover text-white font-medium rounded-xl transition-colors"
+      >
+        OK
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  interface AlertOptions {
+    title?: string;
+    type?: 'error' | 'info' | 'success' | 'warning';
+    onClose?: () => void;
+  }
+
+  const modal = document.getElementById('alert-modal');
+  const titleEl = document.getElementById('alert-title');
+  const messageEl = document.getElementById('alert-message');
+  const iconContainer = document.getElementById('alert-icon');
+  const okBtn = document.getElementById('alert-ok-btn');
+
+  const icons = {
+    error: document.getElementById('alert-icon-error'),
+    info: document.getElementById('alert-icon-info'),
+    success: document.getElementById('alert-icon-success'),
+    warning: document.getElementById('alert-icon-warning'),
+  };
+
+  const iconBgColors = {
+    error: 'bg-red-500/10',
+    info: 'bg-brand/10',
+    success: 'bg-success/10',
+    warning: 'bg-amber-500/10',
+  };
+
+  const titles = {
+    error: 'Error',
+    info: 'Info',
+    success: 'Success',
+    warning: 'Warning',
+  };
+
+  let currentOnClose: (() => void) | undefined;
+
+  function showAlert(message: string, options: AlertOptions = {}) {
+    const type = options.type || 'error';
+    const title = options.title || titles[type];
+    currentOnClose = options.onClose;
+
+    // Set content
+    if (titleEl) titleEl.textContent = title;
+    if (messageEl) messageEl.textContent = message;
+
+    // Update icon
+    Object.entries(icons).forEach(([key, icon]) => {
+      icon?.classList.toggle('hidden', key !== type);
+    });
+
+    // Update icon background
+    if (iconContainer) {
+      Object.values(iconBgColors).forEach(bg => iconContainer.classList.remove(bg));
+      iconContainer.classList.add(iconBgColors[type]);
+    }
+
+    // Show modal
+    modal?.classList.remove('hidden', 'closing');
+  }
+
+  function closeAlert() {
+    modal?.classList.add('closing');
+    setTimeout(() => {
+      modal?.classList.add('hidden');
+      modal?.classList.remove('closing');
+      if (currentOnClose) {
+        currentOnClose();
+        currentOnClose = undefined;
+      }
+    }, 150);
+  }
+
+  // Event listeners
+  okBtn?.addEventListener('click', closeAlert);
+
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeAlert();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal?.classList.contains('hidden')) {
+      closeAlert();
+    }
+  });
+
+  // Expose globally
+  (window as any).showAlert = showAlert;
+  (window as any).closeAlert = closeAlert;
+</script>

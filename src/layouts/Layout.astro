@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import { getBrandConfig } from '../lib/branding';
 import PostHog from '../components/PostHog.astro';
+import AlertModal from '../components/ui/AlertModal.astro';
 
 interface Props {
   title?: string;
@@ -23,8 +24,19 @@ const imageURL = new URL(image, Astro.site || Astro.url.origin);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
 	<head>
+		<!-- Theme detection (runs before page render to prevent flash) -->
+		<script is:inline>
+			(function() {
+				const savedTheme = localStorage.getItem('theme');
+				const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+				if (savedTheme === 'light' || (!savedTheme && !prefersDark)) {
+					document.documentElement.classList.remove('dark');
+				}
+			})();
+		</script>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -70,8 +82,9 @@ const imageURL = new URL(image, Astro.site || Astro.url.origin);
 
 		<meta name="generator" content={Astro.generator} />
 	</head>
-	<body class="bg-slate-900 min-h-screen antialiased">
+	<body class="min-h-screen antialiased transition-colors duration-200">
 		<PostHog />
 		<slot />
+		<AlertModal />
 	</body>
 </html>

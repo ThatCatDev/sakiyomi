@@ -31,7 +31,7 @@ const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
 
 <li
   class:list={[
-    "flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50",
+    "flex items-center gap-3 p-2 rounded-lg hover:bg-surface-hover/50",
     !isOnline && "opacity-50"
   ]}
   data-participant-id={participant.id}
@@ -52,7 +52,7 @@ const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
     />
     <!-- Current user indicator (star) -->
     {isCurrentUser && (
-      <div class="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full border-2 border-slate-900 flex items-center justify-center current-user-indicator">
+      <div class="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full border-2 border-surface-primary flex items-center justify-center current-user-indicator">
         <svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
         </svg>
@@ -61,8 +61,8 @@ const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
     <!-- Online status indicator -->
     <div
       class:list={[
-        'absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 flex items-center justify-center online-indicator',
-        isOnline ? 'bg-green-500' : 'bg-slate-700'
+        'absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-surface-primary flex items-center justify-center online-indicator',
+        isOnline ? 'bg-success' : 'bg-surface-tertiary'
       ]}
       data-is-online={isOnline ? 'true' : 'false'}
     >
@@ -71,7 +71,7 @@ const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
         <span></span>
       ) : (
         <!-- Disconnect icon -->
-        <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-2.5 h-2.5 text-content-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M18.364 5.636a9 9 0 11-12.728 0M12 9v4" />
         </svg>
       )}
@@ -79,9 +79,9 @@ const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
   </div>
 
   <div class="flex-1 min-w-0">
-    <span class="text-white text-sm truncate block participant-name">{participant.name}</span>
+    <span class="text-content-primary text-sm truncate block participant-name">{participant.name}</span>
     {participant.role === 'manager' && (
-      <span class="text-xs text-indigo-400">Manager</span>
+      <span class="text-xs text-brand">Manager</span>
     )}
   </div>
 
@@ -89,8 +89,8 @@ const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
   <div
     class:list={[
       "vote-indicator w-7 h-7 rounded flex items-center justify-center text-xs font-bold flex-shrink-0",
-      showVoteValue ? "bg-indigo-600/30 text-indigo-300" :
-        hasVoted ? "bg-green-600/30 text-green-400" : "bg-slate-700/50 text-slate-500",
+      showVoteValue ? "bg-brand-light text-brand" :
+        hasVoted ? "bg-success-light text-success" : "bg-surface-tertiary/50 text-content-muted",
       hideVoteIndicator && "hidden"
     ]}
     data-has-vote={hasVoted ? 'true' : 'false'}
@@ -111,7 +111,7 @@ const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
   <div class="w-6 flex items-center justify-center flex-shrink-0 promote-demote-slot">
     {canPromote && (
       <button
-        class="promote-btn p-1 text-slate-400 hover:text-indigo-400 transition-colors"
+        class="promote-btn p-1 text-content-muted hover:text-brand transition-colors"
         title="Make manager"
         data-participant-id={participant.id}
       >
@@ -122,7 +122,7 @@ const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
     )}
     {canDemote && (
       <button
-        class="demote-btn p-1 text-slate-400 hover:text-red-400 transition-colors"
+        class="demote-btn p-1 text-content-muted hover:text-red-400 transition-colors"
         title={isCurrentUser ? "Step down as manager" : "Remove manager"}
         data-participant-id={participant.id}
       >
@@ -137,7 +137,7 @@ const avatarUrl = getAvatarUrl(avatarStyle, avatarSeed, 32);
   <div class="w-6 flex items-center justify-center flex-shrink-0 kick-slot">
     {canKick && (
       <button
-        class="kick-btn p-1 text-slate-400 hover:text-red-400 transition-colors"
+        class="kick-btn p-1 text-content-muted hover:text-red-400 transition-colors"
         title="Remove from room"
         data-participant-id={participant.id}
       >
