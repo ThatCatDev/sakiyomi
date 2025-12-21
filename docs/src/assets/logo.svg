@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+    <!-- Stepped stones: tuned to read as stones, not bars -->
+    <ellipse cx="22" cy="44" rx="16" ry="8" fill="#4F6BFF"/>
+    <ellipse cx="36" cy="32" rx="14" ry="7" fill="#4F6BFF"/>
+    <ellipse cx="48" cy="20" rx="12" ry="6" fill="#4F6BFF"/>
+</svg>

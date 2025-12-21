@@ -8,6 +8,10 @@ export default defineConfig({
 		starlight({
 			title: 'Storypoint Estimate Docs',
 			description: 'Documentation for Storypoint Estimate - free online story point estimation tool for agile teams.',
+			logo: {
+				src: './src/assets/logo.svg',
+				alt: 'Storypoint Estimate',
+			},
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/thatcatdev/sakiyomi' },
 			],
