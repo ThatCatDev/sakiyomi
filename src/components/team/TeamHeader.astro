@@ -1,0 +1,54 @@
+---
+import type { Team, TeamRole } from '../../lib/team/types';
+import { canManageTeam } from '../../lib/team/types';
+import RoleBadge from './RoleBadge.astro';
+
+interface Props {
+  team: Team;
+  userRole: TeamRole;
+  memberCount: number;
+}
+
+const { team, userRole, memberCount } = Astro.props;
+const canManage = canManageTeam(userRole);
+---
+
+<div class="bg-surface-card rounded-2xl border border-border-default p-6 mb-6">
+  <div class="flex items-start gap-4">
+    {team.avatar_url ? (
+      <img
+        src={team.avatar_url}
+        alt={team.name}
+        class="w-16 h-16 rounded-xl object-cover"
+      />
+    ) : (
+      <div class="w-16 h-16 rounded-xl bg-brand-light flex items-center justify-center text-brand text-2xl font-bold">
+        {team.name.charAt(0).toUpperCase()}
+      </div>
+    )}
+
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-3 flex-wrap">
+        <h1 class="text-2xl font-bold text-content-primary">{team.name}</h1>
+        <RoleBadge role={userRole} size="md" />
+      </div>
+      <p class="text-content-muted mt-1">/{team.slug}</p>
+      <p class="text-sm text-content-secondary mt-2">
+        {memberCount} {memberCount === 1 ? 'member' : 'members'}
+      </p>
+    </div>
+
+    {canManage && (
+      <a
+        href={`/teams/${team.slug}/settings`}
+        class="p-2 text-content-muted hover:text-content-primary hover:bg-surface-hover rounded-lg transition-colors"
+        title="Team settings"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </a>
+    )}
+  </div>
+</div>

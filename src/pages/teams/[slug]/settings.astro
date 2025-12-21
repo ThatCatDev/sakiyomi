@@ -1,0 +1,122 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Header from '../../../components/Header.astro';
+import TeamHeader from '../../../components/team/TeamHeader.astro';
+import TeamSidebar from '../../../components/team/TeamSidebar.astro';
+import TeamSettings from '../../../components/team/TeamSettings.astro';
+import TeamLimitsCard from '../../../components/team/TeamLimitsCard.astro';
+import DeleteTeamModal from '../../../components/team/DeleteTeamModal.astro';
+import { createSupabaseServerClient } from '../../../lib/supabase';
+import { canManageTeam, type Team, type TeamRole, type TeamLimits } from '../../../lib/team/types';
+
+const { slug } = Astro.params;
+
+// Get authenticated user
+const cookieHeader = Astro.request.headers.get('Cookie') ?? '';
+const supabase = createSupabaseServerClient(Astro.cookies, cookieHeader);
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  return Astro.redirect(`/login?redirect=/teams/${slug}/settings`);
+}
+
+// Get team
+const { data: team } = await supabase
+  .from('teams')
+  .select('*')
+  .eq('slug', slug)
+  .single();
+
+if (!team) {
+  return Astro.redirect('/teams');
+}
+
+// Check membership
+const { data: membership } = await supabase
+  .from('team_members')
+  .select('role')
+  .eq('team_id', team.id)
+  .eq('user_id', user.id)
+  .single();
+
+if (!membership) {
+  return Astro.redirect('/teams');
+}
+
+const userRole = membership.role as TeamRole;
+
+// Only owners and admins can access settings
+if (!canManageTeam(userRole)) {
+  return Astro.redirect(`/teams/${slug}`);
+}
+
+// Get member count
+const { count: memberCount } = await supabase
+  .from('team_members')
+  .select('*', { count: 'exact', head: true })
+  .eq('team_id', team.id);
+
+// Get room count
+const { count: roomCount } = await supabase
+  .from('rooms')
+  .select('*', { count: 'exact', head: true })
+  .eq('team_id', team.id);
+
+// Get team limits
+const { data: limits } = await supabase
+  .from('team_limits')
+  .select('*')
+  .eq('team_id', team.id)
+  .single();
+
+const teamLimits: TeamLimits = limits || {
+  id: '',
+  team_id: team.id,
+  max_members: 5,
+  max_active_rooms: 3,
+  plan_name: 'free',
+};
+---
+
+<Layout title={`Settings - ${team.name}`}>
+  <Header user={user} />
+
+  <main class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-4">
+      <a href="/teams" class="text-sm text-content-muted hover:text-content-primary transition-colors">
+        &larr; Back to Teams
+      </a>
+    </div>
+
+    <TeamHeader
+      team={team as Team}
+      userRole={userRole}
+      memberCount={memberCount || 0}
+    />
+
+    <TeamSidebar
+      teamSlug={slug!}
+      userRole={userRole}
+      currentPage="settings"
+    />
+
+    <div class="grid gap-6 lg:grid-cols-3">
+      <div class="lg:col-span-2">
+        <TeamSettings
+          team={team as Team}
+          userRole={userRole}
+        />
+      </div>
+
+      <div>
+        <TeamLimitsCard
+          limits={teamLimits}
+          currentMembers={memberCount || 0}
+          currentRooms={roomCount || 0}
+        />
+      </div>
+    </div>
+  </main>
+
+  <DeleteTeamModal teamSlug={slug!} teamName={team.name} />
+</Layout>

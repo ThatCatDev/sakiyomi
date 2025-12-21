@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { createSupabaseServerClientFromRequest } from '../../../lib/supabase';
+import { createSupabaseServerClientWithCookies } from '../../../lib/supabase';
 
 export const GET: APIRoute = async ({ request, redirect }) => {
   const url = new URL(request.url);
@@ -7,7 +7,7 @@ export const GET: APIRoute = async ({ request, redirect }) => {
 
   if (code) {
     const response = new Response();
-    const supabase = createSupabaseServerClientFromRequest(request, response);
+    const supabase = createSupabaseServerClientWithCookies(request, response);
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 

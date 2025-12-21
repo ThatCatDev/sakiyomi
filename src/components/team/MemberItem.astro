@@ -1,0 +1,73 @@
+---
+import { canManageRole, type TeamMemberWithUser, type TeamRole } from '../../lib/team/types';
+import RoleBadge from './RoleBadge.astro';
+
+interface Props {
+  member: TeamMemberWithUser;
+  currentUserRole: TeamRole;
+  isCurrentUser: boolean;
+  teamSlug: string;
+}
+
+const { member, currentUserRole, isCurrentUser, teamSlug } = Astro.props;
+
+// Determine if current user can manage this member
+const canManage = canManageRole(currentUserRole, member.role) && !isCurrentUser;
+const canChangeRole = currentUserRole === 'owner' && member.role !== 'owner';
+---
+
+<div class="flex items-center justify-between py-3 px-4 bg-surface-elevated rounded-xl" data-member-id={member.user_id}>
+  <div class="flex items-center gap-3 min-w-0">
+    {member.user?.avatar_url ? (
+      <img
+        src={member.user.avatar_url}
+        alt={member.user.display_name || 'User'}
+        class="w-10 h-10 rounded-full object-cover"
+      />
+    ) : (
+      <div class="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center text-brand font-bold">
+        {(member.user?.display_name || member.user?.email || '?').charAt(0).toUpperCase()}
+      </div>
+    )}
+
+    <div class="min-w-0">
+      <div class="flex items-center gap-2">
+        <p class="font-medium text-content-primary truncate">
+          {member.user?.display_name || member.user?.email || 'Unknown User'}
+          {isCurrentUser && <span class="text-content-muted text-sm">(you)</span>}
+        </p>
+      </div>
+      <p class="text-sm text-content-muted truncate">{member.user?.email}</p>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-3">
+    {canChangeRole ? (
+      <select
+        class="text-xs px-2 py-1 rounded-full bg-surface-card border border-border-default text-content-primary cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand"
+        data-role-select
+        data-user-id={member.user_id}
+      >
+        <option value="admin" selected={member.role === 'admin'}>Admin</option>
+        <option value="member" selected={member.role === 'member'}>Member</option>
+      </select>
+    ) : (
+      <RoleBadge role={member.role} />
+    )}
+
+    {canManage && (
+      <button
+        type="button"
+        class="p-2 text-content-muted hover:text-status-error hover:bg-status-error/10 rounded-lg transition-colors"
+        data-remove-member
+        data-user-id={member.user_id}
+        data-user-name={member.user?.display_name || member.user?.email || 'this member'}
+        title="Remove member"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+    )}
+  </div>
+</div>

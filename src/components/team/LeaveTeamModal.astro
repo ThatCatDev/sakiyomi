@@ -1,0 +1,126 @@
+---
+interface Props {
+  teamSlug: string;
+  teamName: string;
+}
+
+const { teamSlug, teamName } = Astro.props;
+---
+
+<div
+  id="leave-team-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="leave-team-modal-title"
+  data-team-slug={teamSlug}
+>
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-modal-backdrop></div>
+
+  <!-- Modal -->
+  <div class="relative w-full max-w-md bg-surface-card rounded-2xl shadow-xl border border-border-default">
+    <div class="p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-status-warning/10 flex items-center justify-center">
+          <svg class="w-5 h-5 text-status-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h2 id="leave-team-modal-title" class="text-xl font-semibold text-content-primary">
+          Leave Team?
+        </h2>
+      </div>
+
+      <p class="text-content-secondary mb-6">
+        Are you sure you want to leave <strong class="text-content-primary">{teamName}</strong>? You will lose access to all team rooms and will need a new invitation to rejoin.
+      </p>
+
+      <div id="leave-team-error" class="hidden text-sm text-status-error bg-status-error/10 px-4 py-2 rounded-lg mb-4">
+      </div>
+
+      <div class="flex gap-3">
+        <button
+          type="button"
+          data-modal-close
+          class="flex-1 px-4 py-2.5 bg-surface-elevated text-content-primary rounded-xl font-medium hover:bg-surface-hover transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="confirm-leave-btn"
+          class="flex-1 px-4 py-2.5 bg-status-warning text-white rounded-xl font-medium hover:bg-status-warning/90 transition-colors"
+        >
+          Leave Team
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { leaveTeam } from '../../lib/team/api';
+
+  function initLeaveTeamModal() {
+    const modal = document.getElementById('leave-team-modal');
+    if (!modal) return;
+
+    const teamSlug = modal.dataset.teamSlug;
+    if (!teamSlug) return;
+
+    const backdrop = modal.querySelector('[data-modal-backdrop]');
+    const closeBtn = modal.querySelector('[data-modal-close]');
+    const confirmBtn = document.getElementById('confirm-leave-btn');
+    const errorDiv = document.getElementById('leave-team-error');
+
+    // Close modal handlers
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      errorDiv?.classList.add('hidden');
+    };
+
+    backdrop?.addEventListener('click', closeModal);
+    closeBtn?.addEventListener('click', closeModal);
+
+    // Handle escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Handle leave confirmation
+    confirmBtn?.addEventListener('click', async () => {
+      confirmBtn.setAttribute('disabled', 'true');
+      confirmBtn.textContent = 'Leaving...';
+      errorDiv?.classList.add('hidden');
+
+      try {
+        await leaveTeam(teamSlug);
+        // Redirect to teams list
+        window.location.href = '/teams';
+      } catch (err) {
+        if (errorDiv) {
+          errorDiv.textContent = err instanceof Error ? err.message : 'Failed to leave team';
+          errorDiv.classList.remove('hidden');
+        }
+        confirmBtn.removeAttribute('disabled');
+        confirmBtn.textContent = 'Leave Team';
+      }
+    });
+  }
+
+  initLeaveTeamModal();
+  document.addEventListener('astro:page-load', initLeaveTeamModal);
+
+  // Export function to open modal
+  (window as any).openLeaveTeamModal = () => {
+    const modal = document.getElementById('leave-team-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  };
+</script>

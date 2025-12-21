@@ -1,0 +1,214 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import { createSupabaseServerClient } from '../../lib/supabase';
+
+const { token } = Astro.params;
+
+// Get authenticated user
+const cookieHeader = Astro.request.headers.get('Cookie') ?? '';
+const supabase = createSupabaseServerClient(Astro.cookies, cookieHeader);
+const { data: { user } } = await supabase.auth.getUser();
+
+// Fetch invitation details
+const { data: invitation, error: invError } = await supabase
+  .from('team_invitations')
+  .select(`
+    id,
+    team_id,
+    invitation_type,
+    role,
+    status,
+    expires_at,
+    max_uses,
+    use_count,
+    teams (
+      id,
+      name,
+      slug,
+      avatar_url
+    )
+  `)
+  .eq('token', token)
+  .eq('invitation_type', 'link')
+  .single();
+
+// Check invitation validity
+let error: string | null = null;
+
+if (invError || !invitation) {
+  error = 'This invitation link is invalid or has expired.';
+} else if (invitation.status !== 'pending') {
+  error = 'This invitation is no longer valid.';
+} else if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
+  error = 'This invitation has expired.';
+} else if (invitation.max_uses !== null && invitation.use_count >= invitation.max_uses) {
+  error = 'This invitation has reached its maximum uses.';
+}
+
+const team = invitation?.teams as any;
+
+// Check if user is already a member
+let isAlreadyMember = false;
+if (user && team && !error) {
+  const { data: existing } = await supabase
+    .from('team_members')
+    .select('id')
+    .eq('team_id', team.id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (existing) {
+    isAlreadyMember = true;
+  }
+}
+---
+
+<Layout title={team ? `Join ${team.name}` : 'Team Invitation'}>
+  <Header user={user} />
+
+  <main class="container mx-auto px-4 py-16 max-w-md">
+    <div class="bg-surface-card rounded-2xl border border-border-default p-8 text-center">
+      {error ? (
+        <>
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-status-error/10 flex items-center justify-center">
+            <svg class="w-8 h-8 text-status-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h1 class="text-xl font-semibold text-content-primary mb-2">Invalid Invitation</h1>
+          <p class="text-content-secondary mb-6">{error}</p>
+          <a
+            href="/"
+            class="inline-block px-6 py-2.5 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors"
+          >
+            Go Home
+          </a>
+        </>
+      ) : isAlreadyMember ? (
+        <>
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-light flex items-center justify-center">
+            <svg class="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 class="text-xl font-semibold text-content-primary mb-2">Already a Member</h1>
+          <p class="text-content-secondary mb-6">You're already a member of <strong>{team.name}</strong>.</p>
+          <a
+            href={`/teams/${team.slug}`}
+            class="inline-block px-6 py-2.5 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors"
+          >
+            Go to Team
+          </a>
+        </>
+      ) : (
+        <>
+          {team.avatar_url ? (
+            <img
+              src={team.avatar_url}
+              alt={team.name}
+              class="w-20 h-20 mx-auto mb-4 rounded-2xl object-cover"
+            />
+          ) : (
+            <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-brand-light flex items-center justify-center text-brand text-3xl font-bold">
+              {team.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+
+          <h1 class="text-xl font-semibold text-content-primary mb-2">
+            Join {team.name}
+          </h1>
+          <p class="text-content-secondary mb-6">
+            You've been invited to join as a <strong class="capitalize">{invitation!.role}</strong>.
+          </p>
+
+          {user ? (
+            <div id="invite-actions" data-token={token}>
+              <div id="invite-error" class="hidden text-sm text-status-error bg-status-error/10 px-4 py-2 rounded-lg mb-4">
+              </div>
+
+              <button
+                type="button"
+                id="accept-invite-btn"
+                class="w-full px-6 py-3 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Accept Invitation
+              </button>
+
+              <a
+                href="/"
+                class="block mt-3 text-sm text-content-muted hover:text-content-primary transition-colors"
+              >
+                Decline
+              </a>
+            </div>
+          ) : (
+            <div class="space-y-3">
+              <a
+                href={`/login?redirect=/invite/${token}`}
+                class="block w-full px-6 py-3 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors"
+              >
+                Sign In to Accept
+              </a>
+              <p class="text-sm text-content-muted">
+                Don't have an account?
+                <a href={`/signup?redirect=/invite/${token}`} class="text-brand hover:underline">
+                  Sign up
+                </a>
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  </main>
+</Layout>
+
+<script>
+  function initInviteAccept() {
+    const container = document.getElementById('invite-actions');
+    if (!container) return;
+
+    const token = container.dataset.token;
+    if (!token) return;
+
+    const acceptBtn = document.getElementById('accept-invite-btn');
+    const errorDiv = document.getElementById('invite-error');
+
+    acceptBtn?.addEventListener('click', async () => {
+      acceptBtn.setAttribute('disabled', 'true');
+      acceptBtn.textContent = 'Joining...';
+      errorDiv?.classList.add('hidden');
+
+      try {
+        const response = await fetch(`/api/invitations/${token}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to accept invitation');
+        }
+
+        // Redirect to team page
+        if (data.team_slug) {
+          window.location.href = `/teams/${data.team_slug}`;
+        } else {
+          window.location.href = '/teams';
+        }
+      } catch (err) {
+        if (errorDiv) {
+          errorDiv.textContent = err instanceof Error ? err.message : 'Failed to accept invitation';
+          errorDiv.classList.remove('hidden');
+        }
+        acceptBtn.removeAttribute('disabled');
+        acceptBtn.textContent = 'Accept Invitation';
+      }
+    });
+  }
+
+  initInviteAccept();
+  document.addEventListener('astro:page-load', initInviteAccept);
+</script>

@@ -39,7 +39,24 @@ export function createSupabaseServerClient(cookies: AstroCookies, cookieHeader?:
   );
 }
 
-export function createSupabaseServerClientFromRequest(request: Request, response: Response) {
+export function createSupabaseServerClientFromRequest(request: Request) {
+  return createServerClient(
+    import.meta.env.PUBLIC_SUPABASE_URL,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return parseCookieHeader(request.headers.get('Cookie') ?? '');
+        },
+        setAll() {
+          // API routes handle their own cookie setting in responses
+        },
+      },
+    }
+  );
+}
+
+export function createSupabaseServerClientWithCookies(request: Request, response: Response) {
   return createServerClient(
     import.meta.env.PUBLIC_SUPABASE_URL,
     import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
@@ -50,7 +67,12 @@ export function createSupabaseServerClientFromRequest(request: Request, response
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.headers.append('Set-Cookie', `${name}=${value}; Path=${options?.path ?? '/'}; HttpOnly; SameSite=Lax`);
+            const maxAge = options?.maxAge ? `; Max-Age=${options.maxAge}` : '';
+            const path = options?.path ?? '/';
+            const httpOnly = options?.httpOnly !== false ? '; HttpOnly' : '';
+            const secure = options?.secure ? '; Secure' : '';
+            const sameSite = options?.sameSite ? `; SameSite=${options.sameSite}` : '; SameSite=Lax';
+            response.headers.append('Set-Cookie', `${name}=${value}; Path=${path}${maxAge}${httpOnly}${secure}${sameSite}`);
           });
         },
       },

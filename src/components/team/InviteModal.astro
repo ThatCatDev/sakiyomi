@@ -1,0 +1,315 @@
+---
+interface Props {
+  teamSlug: string;
+}
+
+const { teamSlug } = Astro.props;
+---
+
+<div
+  id="invite-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="invite-modal-title"
+  data-team-slug={teamSlug}
+>
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-modal-backdrop></div>
+
+  <!-- Modal -->
+  <div class="relative w-full max-w-md bg-surface-card rounded-2xl shadow-xl border border-border-default">
+    <div class="p-6">
+      <h2 id="invite-modal-title" class="text-xl font-semibold text-content-primary mb-4">
+        Invite Team Members
+      </h2>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-4 p-1 bg-surface-elevated rounded-xl">
+        <button
+          type="button"
+          class="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-surface-card text-content-primary shadow-sm"
+          data-tab="link"
+          data-active="true"
+        >
+          Invite Link
+        </button>
+        <button
+          type="button"
+          class="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-content-muted hover:text-content-primary"
+          data-tab="email"
+        >
+          Email Invite
+        </button>
+      </div>
+
+      <!-- Link Tab -->
+      <div id="invite-link-tab" class="space-y-4">
+        <p class="text-sm text-content-secondary">
+          Create a shareable link that anyone can use to join your team.
+        </p>
+
+        <div>
+          <label for="link-role" class="block text-sm font-medium text-content-secondary mb-1.5">
+            Role for new members
+          </label>
+          <select
+            id="link-role"
+            class="w-full px-4 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
+          >
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+
+        <div id="invite-link-result" class="hidden">
+          <label class="block text-sm font-medium text-content-secondary mb-1.5">
+            Invite Link
+          </label>
+          <div class="flex gap-2">
+            <input
+              type="text"
+              id="invite-link-input"
+              readonly
+              class="flex-1 px-4 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-content-primary text-sm"
+            />
+            <button
+              type="button"
+              id="copy-link-btn"
+              class="px-4 py-2.5 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors"
+            >
+              Copy
+            </button>
+          </div>
+          <p class="text-xs text-content-muted mt-2">
+            This link expires in 7 days and can be used unlimited times.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          id="generate-link-btn"
+          class="w-full px-4 py-2.5 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Generate Invite Link
+        </button>
+      </div>
+
+      <!-- Email Tab -->
+      <div id="invite-email-tab" class="hidden space-y-4">
+        <p class="text-sm text-content-secondary">
+          Send an invitation directly to someone's email address.
+        </p>
+
+        <form id="email-invite-form" class="space-y-4">
+          <div>
+            <label for="invite-email" class="block text-sm font-medium text-content-secondary mb-1.5">
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="invite-email"
+              required
+              placeholder="colleague@example.com"
+              class="w-full px-4 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-content-primary placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-brand"
+            />
+          </div>
+
+          <div>
+            <label for="email-role" class="block text-sm font-medium text-content-secondary mb-1.5">
+              Role
+            </label>
+            <select
+              id="email-role"
+              class="w-full px-4 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <div id="email-invite-error" class="hidden text-sm text-status-error bg-status-error/10 px-4 py-2 rounded-lg">
+          </div>
+
+          <div id="email-invite-success" class="hidden text-sm text-status-success bg-status-success/10 px-4 py-2 rounded-lg">
+            Invitation sent successfully!
+          </div>
+
+          <button
+            type="submit"
+            class="w-full px-4 py-2.5 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Send Invitation
+          </button>
+        </form>
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-border-default">
+        <button
+          type="button"
+          data-modal-close
+          class="w-full px-4 py-2.5 bg-surface-elevated text-content-primary rounded-xl font-medium hover:bg-surface-hover transition-colors"
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { createInvitation } from '../../lib/team/api';
+
+  function initInviteModal() {
+    const modal = document.getElementById('invite-modal');
+    if (!modal) return;
+
+    const teamSlug = modal.dataset.teamSlug;
+    if (!teamSlug) return;
+
+    const backdrop = modal.querySelector('[data-modal-backdrop]');
+    const closeBtn = modal.querySelector('[data-modal-close]');
+    const linkTab = document.getElementById('invite-link-tab');
+    const emailTab = document.getElementById('invite-email-tab');
+    const tabBtns = modal.querySelectorAll('[data-tab]');
+
+    // Tab switching
+    tabBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tab = (btn as HTMLElement).dataset.tab;
+
+        tabBtns.forEach((b) => {
+          const isActive = (b as HTMLElement).dataset.tab === tab;
+          (b as HTMLElement).dataset.active = isActive ? 'true' : 'false';
+          if (isActive) {
+            b.classList.add('bg-surface-card', 'text-content-primary', 'shadow-sm');
+            b.classList.remove('text-content-muted');
+          } else {
+            b.classList.remove('bg-surface-card', 'text-content-primary', 'shadow-sm');
+            b.classList.add('text-content-muted');
+          }
+        });
+
+        if (tab === 'link') {
+          linkTab?.classList.remove('hidden');
+          emailTab?.classList.add('hidden');
+        } else {
+          linkTab?.classList.add('hidden');
+          emailTab?.classList.remove('hidden');
+        }
+      });
+    });
+
+    // Close modal
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+
+    backdrop?.addEventListener('click', closeModal);
+    closeBtn?.addEventListener('click', closeModal);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Generate link
+    const generateBtn = document.getElementById('generate-link-btn');
+    const linkResult = document.getElementById('invite-link-result');
+    const linkInput = document.getElementById('invite-link-input') as HTMLInputElement;
+    const linkRole = document.getElementById('link-role') as HTMLSelectElement;
+    const copyBtn = document.getElementById('copy-link-btn');
+
+    generateBtn?.addEventListener('click', async () => {
+      generateBtn.setAttribute('disabled', 'true');
+      generateBtn.textContent = 'Generating...';
+
+      try {
+        const result = await createInvitation(teamSlug, {
+          type: 'link',
+          role: linkRole.value as 'admin' | 'member',
+        });
+
+        const inviteUrl = `${window.location.origin}/invite/${result.token}`;
+        linkInput.value = inviteUrl;
+        linkResult?.classList.remove('hidden');
+        generateBtn.classList.add('hidden');
+      } catch (err) {
+        window.showAlert?.({
+          type: 'error',
+          title: 'Failed to generate link',
+          message: err instanceof Error ? err.message : 'An error occurred',
+        });
+        generateBtn.removeAttribute('disabled');
+        generateBtn.textContent = 'Generate Invite Link';
+      }
+    });
+
+    // Copy link
+    copyBtn?.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(linkInput.value);
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => {
+        copyBtn.textContent = 'Copy';
+      }, 2000);
+    });
+
+    // Email invite form
+    const emailForm = document.getElementById('email-invite-form') as HTMLFormElement;
+    const emailInput = document.getElementById('invite-email') as HTMLInputElement;
+    const emailRole = document.getElementById('email-role') as HTMLSelectElement;
+    const emailError = document.getElementById('email-invite-error');
+    const emailSuccess = document.getElementById('email-invite-success');
+
+    emailForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const submitBtn = emailForm.querySelector('button[type="submit"]') as HTMLButtonElement;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+      emailError?.classList.add('hidden');
+      emailSuccess?.classList.add('hidden');
+
+      try {
+        await createInvitation(teamSlug, {
+          type: 'email',
+          email: emailInput.value.trim(),
+          role: emailRole.value as 'admin' | 'member',
+        });
+
+        emailSuccess?.classList.remove('hidden');
+        emailInput.value = '';
+      } catch (err) {
+        if (emailError) {
+          emailError.textContent = err instanceof Error ? err.message : 'Failed to send invitation';
+          emailError.classList.remove('hidden');
+        }
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Invitation';
+      }
+    });
+  }
+
+  initInviteModal();
+  document.addEventListener('astro:page-load', initInviteModal);
+
+  // Export function to open modal
+  (window as any).openInviteModal = () => {
+    const modal = document.getElementById('invite-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      // Reset state
+      const linkResult = document.getElementById('invite-link-result');
+      const generateBtn = document.getElementById('generate-link-btn');
+      linkResult?.classList.add('hidden');
+      generateBtn?.classList.remove('hidden');
+      generateBtn?.removeAttribute('disabled');
+      if (generateBtn) generateBtn.textContent = 'Generate Invite Link';
+    }
+  };
+</script>

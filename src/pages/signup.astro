@@ -26,7 +26,7 @@ const appName = getAppName(Astro.url.hostname);
 
       <!-- Signup Card -->
       <div class="bg-surface-card rounded-2xl shadow-xl p-8 border border-border-default">
-        <form id="signup-form" class="space-y-6">
+        <form id="signup-form" method="POST" action="#" class="space-y-6">
           <div>
             <label for="email" class="block text-sm font-medium text-content-secondary mb-2">
               Email address
@@ -128,7 +128,9 @@ const appName = getAppName(Astro.url.hostname);
       errorMessage.classList.remove('hidden');
     } else if (data.session) {
       // User was auto-confirmed (email confirmation disabled)
-      window.location.href = '/';
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirect') || '/';
+      window.location.href = redirectTo;
     } else {
       // Email confirmation required
       successMessage.textContent = 'Check your email for the confirmation link!';

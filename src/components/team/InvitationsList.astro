@@ -1,0 +1,122 @@
+---
+import type { TeamInvitation } from '../../lib/team/types';
+
+interface Props {
+  invitations: TeamInvitation[];
+  teamSlug: string;
+}
+
+const { invitations, teamSlug } = Astro.props;
+
+const pendingInvitations = invitations.filter((inv) => inv.status === 'pending');
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return 'Never';
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+---
+
+<div id="invitations-list" data-team-slug={teamSlug}>
+  {pendingInvitations.length === 0 ? (
+    <p class="text-center py-8 text-content-muted">No pending invitations</p>
+  ) : (
+    <div class="space-y-2">
+      {pendingInvitations.map((invitation) => (
+        <div
+          class="flex items-center justify-between py-3 px-4 bg-surface-elevated rounded-xl"
+          data-invitation-id={invitation.id}
+        >
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              {invitation.invitation_type === 'email' ? (
+                <>
+                  <svg class="w-4 h-4 text-content-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span class="text-content-primary truncate">{invitation.email}</span>
+                </>
+              ) : (
+                <>
+                  <svg class="w-4 h-4 text-content-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  <span class="text-content-primary">Invite Link</span>
+                  {invitation.max_uses && (
+                    <span class="text-xs text-content-muted">
+                      ({invitation.use_count}/{invitation.max_uses} uses)
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+            <p class="text-xs text-content-muted mt-1">
+              Role: {invitation.role} · Expires: {formatDate(invitation.expires_at)}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="ml-4 p-2 text-content-muted hover:text-status-error hover:bg-status-error/10 rounded-lg transition-colors"
+            data-revoke-invitation
+            data-invitation-id={invitation.id}
+            title="Revoke invitation"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+<script>
+  import { revokeInvitation } from '../../lib/team/api';
+
+  function initInvitationsList() {
+    const list = document.getElementById('invitations-list');
+    if (!list) return;
+
+    const teamSlug = list.dataset.teamSlug;
+    if (!teamSlug) return;
+
+    list.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      const revokeBtn = target.closest('[data-revoke-invitation]') as HTMLElement;
+      if (!revokeBtn) return;
+
+      const invitationId = revokeBtn.dataset.invitationId;
+      if (!invitationId) return;
+
+      const confirmed = confirm('Are you sure you want to revoke this invitation?');
+      if (!confirmed) return;
+
+      try {
+        await revokeInvitation(teamSlug, invitationId);
+        // Remove the invitation element from DOM
+        const invEl = document.querySelector(`[data-invitation-id="${invitationId}"]`);
+        invEl?.remove();
+
+        // Check if list is now empty
+        const remaining = list.querySelectorAll('[data-invitation-id]');
+        if (remaining.length === 0) {
+          list.innerHTML = '<p class="text-center py-8 text-content-muted">No pending invitations</p>';
+        }
+      } catch (err) {
+        window.showAlert?.({
+          type: 'error',
+          title: 'Failed to revoke invitation',
+          message: err instanceof Error ? err.message : 'An error occurred',
+        });
+      }
+    });
+  }
+
+  initInvitationsList();
+  document.addEventListener('astro:page-load', initInvitationsList);
+</script>

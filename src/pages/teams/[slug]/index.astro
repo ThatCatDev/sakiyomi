@@ -1,0 +1,105 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Header from '../../../components/Header.astro';
+import TeamHeader from '../../../components/team/TeamHeader.astro';
+import TeamSidebar from '../../../components/team/TeamSidebar.astro';
+import TeamRoomsList from '../../../components/team/TeamRoomsList.astro';
+import CreateTeamRoomModal from '../../../components/team/CreateTeamRoomModal.astro';
+import LeaveTeamModal from '../../../components/team/LeaveTeamModal.astro';
+import { createSupabaseServerClient } from '../../../lib/supabase';
+import type { Team, TeamRole } from '../../../lib/team/types';
+
+const { slug } = Astro.params;
+
+// Get authenticated user
+const cookieHeader = Astro.request.headers.get('Cookie') ?? '';
+const supabase = createSupabaseServerClient(Astro.cookies, cookieHeader);
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  return Astro.redirect(`/login?redirect=/teams/${slug}`);
+}
+
+// Get team
+const { data: team } = await supabase
+  .from('teams')
+  .select('*')
+  .eq('slug', slug)
+  .single();
+
+if (!team) {
+  return Astro.redirect('/teams');
+}
+
+// Check membership
+const { data: membership } = await supabase
+  .from('team_members')
+  .select('role')
+  .eq('team_id', team.id)
+  .eq('user_id', user.id)
+  .single();
+
+if (!membership) {
+  return Astro.redirect('/teams');
+}
+
+const userRole = membership.role as TeamRole;
+
+// Get member count
+const { count: memberCount } = await supabase
+  .from('team_members')
+  .select('*', { count: 'exact', head: true })
+  .eq('team_id', team.id);
+
+// Get team rooms
+const { data: rooms } = await supabase
+  .from('rooms')
+  .select('id, name, created_at, last_activity_at')
+  .eq('team_id', team.id)
+  .order('last_activity_at', { ascending: false, nullsFirst: false });
+---
+
+<Layout title={`${team.name} - Teams`}>
+  <Header user={user} />
+
+  <main class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-4">
+      <a href="/teams" class="text-sm text-content-muted hover:text-content-primary transition-colors">
+        &larr; Back to Teams
+      </a>
+    </div>
+
+    <TeamHeader
+      team={team as Team}
+      userRole={userRole}
+      memberCount={memberCount || 0}
+    />
+
+    <TeamSidebar
+      teamSlug={slug!}
+      userRole={userRole}
+      currentPage="overview"
+    />
+
+    <TeamRoomsList
+      rooms={rooms || []}
+      teamSlug={slug!}
+      userRole={userRole}
+    />
+
+    {userRole !== 'owner' && (
+      <div class="mt-8 pt-8 border-t border-border-default">
+        <button
+          type="button"
+          onclick="openLeaveTeamModal?.()"
+          class="text-sm text-content-muted hover:text-status-warning transition-colors"
+        >
+          Leave this team
+        </button>
+      </div>
+    )}
+  </main>
+
+  <CreateTeamRoomModal teamSlug={slug!} />
+  <LeaveTeamModal teamSlug={slug!} teamName={team.name} />
+</Layout>

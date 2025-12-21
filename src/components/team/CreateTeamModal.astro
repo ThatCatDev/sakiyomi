@@ -1,0 +1,165 @@
+---
+// CreateTeamModal - Modal for creating a new team
+---
+
+<div
+  id="create-team-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="create-team-modal-title"
+>
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-modal-backdrop></div>
+
+  <!-- Modal -->
+  <div class="relative w-full max-w-md bg-surface-card rounded-2xl shadow-xl border border-border-default">
+    <div class="p-6">
+      <h2 id="create-team-modal-title" class="text-xl font-semibold text-content-primary mb-4">
+        Create a Team
+      </h2>
+
+      <form id="create-team-form" class="space-y-4">
+        <div>
+          <label for="team-name" class="block text-sm font-medium text-content-secondary mb-1.5">
+            Team Name
+          </label>
+          <input
+            type="text"
+            id="team-name"
+            name="name"
+            required
+            minlength="2"
+            maxlength="50"
+            placeholder="My Awesome Team"
+            class="w-full px-4 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-content-primary placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label for="team-slug" class="block text-sm font-medium text-content-secondary mb-1.5">
+            Team URL
+          </label>
+          <div class="flex items-center">
+            <span class="text-content-muted text-sm mr-1">/teams/</span>
+            <input
+              type="text"
+              id="team-slug"
+              name="slug"
+              required
+              minlength="2"
+              maxlength="50"
+              pattern="[a-z0-9]([a-z0-9-]*[a-z0-9])?"
+              placeholder="my-team"
+              class="flex-1 px-4 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-content-primary placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+            />
+          </div>
+          <p class="text-xs text-content-muted mt-1">
+            Only lowercase letters, numbers, and hyphens. Must start and end with a letter or number.
+          </p>
+        </div>
+
+        <div id="create-team-error" class="hidden text-sm text-status-error bg-status-error/10 px-4 py-2 rounded-lg">
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button
+            type="button"
+            data-modal-close
+            class="flex-1 px-4 py-2.5 bg-surface-elevated text-content-primary rounded-xl font-medium hover:bg-surface-hover transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="flex-1 px-4 py-2.5 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Create Team
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { createTeam } from '../../lib/team/api';
+
+  function initCreateTeamModal() {
+    const modal = document.getElementById('create-team-modal');
+    const form = document.getElementById('create-team-form') as HTMLFormElement;
+    const nameInput = document.getElementById('team-name') as HTMLInputElement;
+    const slugInput = document.getElementById('team-slug') as HTMLInputElement;
+    const errorDiv = document.getElementById('create-team-error');
+    const backdrop = modal?.querySelector('[data-modal-backdrop]');
+    const closeBtn = modal?.querySelector('[data-modal-close]');
+
+    if (!modal || !form || !nameInput || !slugInput || !errorDiv) return;
+
+    // Auto-generate slug from name
+    nameInput.addEventListener('input', () => {
+      const slug = nameInput.value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      slugInput.value = slug;
+    });
+
+    // Close modal handlers
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      form.reset();
+      errorDiv.classList.add('hidden');
+    };
+
+    backdrop?.addEventListener('click', closeModal);
+    closeBtn?.addEventListener('click', closeModal);
+
+    // Handle escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating...';
+      errorDiv.classList.add('hidden');
+
+      try {
+        const result = await createTeam({
+          name: nameInput.value.trim(),
+          slug: slugInput.value.trim(),
+        });
+
+        // Redirect to new team page
+        window.location.href = `/teams/${result.slug}`;
+      } catch (err) {
+        errorDiv.textContent = err instanceof Error ? err.message : 'Failed to create team';
+        errorDiv.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Team';
+      }
+    });
+  }
+
+  // Initialize on page load
+  initCreateTeamModal();
+  document.addEventListener('astro:page-load', initCreateTeamModal);
+
+  // Export function to open modal
+  (window as any).openCreateTeamModal = () => {
+    const modal = document.getElementById('create-team-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('team-name')?.focus();
+    }
+  };
+</script>

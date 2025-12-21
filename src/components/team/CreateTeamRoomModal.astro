@@ -1,0 +1,137 @@
+---
+interface Props {
+  teamSlug: string;
+}
+
+const { teamSlug } = Astro.props;
+---
+
+<div
+  id="create-team-room-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="create-team-room-modal-title"
+  data-team-slug={teamSlug}
+>
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-modal-backdrop></div>
+
+  <!-- Modal -->
+  <div class="relative w-full max-w-md bg-surface-card rounded-2xl shadow-xl border border-border-default">
+    <div class="p-6">
+      <h2 id="create-team-room-modal-title" class="text-xl font-semibold text-content-primary mb-4">
+        Create Team Room
+      </h2>
+
+      <form id="create-team-room-form" class="space-y-4">
+        <div>
+          <label for="room-name" class="block text-sm font-medium text-content-secondary mb-1.5">
+            Room Name
+          </label>
+          <input
+            type="text"
+            id="room-name"
+            name="name"
+            required
+            minlength="1"
+            maxlength="100"
+            placeholder="Sprint Planning"
+            class="w-full px-4 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-content-primary placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+          />
+        </div>
+
+        <div id="create-team-room-error" class="hidden text-sm text-status-error bg-status-error/10 px-4 py-2 rounded-lg">
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button
+            type="button"
+            data-modal-close
+            class="flex-1 px-4 py-2.5 bg-surface-elevated text-content-primary rounded-xl font-medium hover:bg-surface-hover transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="flex-1 px-4 py-2.5 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Create Room
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { createTeamRoom } from '../../lib/team/api';
+
+  function initCreateTeamRoomModal() {
+    const modal = document.getElementById('create-team-room-modal');
+    if (!modal) return;
+
+    const teamSlug = modal.dataset.teamSlug;
+    if (!teamSlug) return;
+
+    const form = document.getElementById('create-team-room-form') as HTMLFormElement;
+    const nameInput = document.getElementById('room-name') as HTMLInputElement;
+    const errorDiv = document.getElementById('create-team-room-error');
+    const backdrop = modal.querySelector('[data-modal-backdrop]');
+    const closeBtn = modal.querySelector('[data-modal-close]');
+
+    // Close modal handlers
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      form.reset();
+      errorDiv?.classList.add('hidden');
+    };
+
+    backdrop?.addEventListener('click', closeModal);
+    closeBtn?.addEventListener('click', closeModal);
+
+    // Handle escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating...';
+      errorDiv?.classList.add('hidden');
+
+      try {
+        const result = await createTeamRoom(teamSlug, nameInput.value.trim());
+        // Redirect to new room
+        window.location.href = `/room/${result.id}`;
+      } catch (err) {
+        if (errorDiv) {
+          errorDiv.textContent = err instanceof Error ? err.message : 'Failed to create room';
+          errorDiv.classList.remove('hidden');
+        }
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Room';
+      }
+    });
+  }
+
+  initCreateTeamRoomModal();
+  document.addEventListener('astro:page-load', initCreateTeamRoomModal);
+
+  // Export function to open modal
+  (window as any).openCreateTeamRoomModal = () => {
+    const modal = document.getElementById('create-team-room-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('room-name')?.focus();
+    }
+  };
+</script>

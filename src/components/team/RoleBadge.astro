@@ -1,0 +1,19 @@
+---
+import { getRoleColor, getRoleLabel, type TeamRole } from '../../lib/team/types';
+
+interface Props {
+  role: TeamRole;
+  size?: 'sm' | 'md';
+}
+
+const { role, size = 'sm' } = Astro.props;
+
+const sizeClasses = {
+  sm: 'text-xs px-2 py-0.5',
+  md: 'text-sm px-2.5 py-1',
+};
+---
+
+<span class={`rounded-full font-medium ${sizeClasses[size]} ${getRoleColor(role)}`}>
+  {getRoleLabel(role)}
+</span>

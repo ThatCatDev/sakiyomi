@@ -63,6 +63,11 @@ const docsUrl = getDocsUrl(Astro.url.hostname);
     <div class="flex items-center gap-2 sm:gap-4">
       <!-- Desktop nav -->
       <div class:list={["items-center gap-4", showRoomInfo ? "hidden sm:flex" : "hidden sm:flex"]}>
+        {user && (
+          <a href="/teams" class="text-content-secondary hover:text-content-primary transition-colors text-sm">
+            Teams
+          </a>
+        )}
         <a href={docsUrl} target="_blank" rel="noopener noreferrer" class="text-content-secondary hover:text-content-primary transition-colors text-sm">
           Docs
         </a>
@@ -138,6 +143,11 @@ const docsUrl = getDocsUrl(Astro.url.hostname);
   <!-- Mobile menu dropdown -->
   <div id="mobile-menu" class="hidden sm:hidden border-t border-border-default bg-surface-secondary">
     <div class="px-4 py-3 space-y-3">
+      {user && (
+        <a href="/teams" class="block text-content-secondary hover:text-content-primary transition-colors">
+          Teams
+        </a>
+      )}
       <a href={docsUrl} target="_blank" rel="noopener noreferrer" class="block text-content-secondary hover:text-content-primary transition-colors">
         Docs
       </a>

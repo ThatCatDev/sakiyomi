@@ -1,0 +1,59 @@
+---
+import type { TeamLimits } from '../../lib/team/types';
+
+interface Props {
+  limits: TeamLimits;
+  currentMembers: number;
+  currentRooms: number;
+}
+
+const { limits, currentMembers, currentRooms } = Astro.props;
+
+const memberPercent = Math.min((currentMembers / limits.max_members) * 100, 100);
+const roomPercent = Math.min((currentRooms / limits.max_active_rooms) * 100, 100);
+---
+
+<div class="bg-surface-elevated rounded-xl p-4">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="font-medium text-content-primary">Usage</h3>
+    <span class="text-xs px-2 py-1 rounded-full bg-brand-light text-brand capitalize">
+      {limits.plan_name} Plan
+    </span>
+  </div>
+
+  <div class="space-y-4">
+    <!-- Members usage -->
+    <div>
+      <div class="flex items-center justify-between text-sm mb-1.5">
+        <span class="text-content-secondary">Members</span>
+        <span class="text-content-primary font-medium">{currentMembers} / {limits.max_members}</span>
+      </div>
+      <div class="h-2 bg-surface-card rounded-full overflow-hidden">
+        <div
+          class="h-full bg-brand rounded-full transition-all duration-300"
+          style={`width: ${memberPercent}%`}
+        />
+      </div>
+    </div>
+
+    <!-- Rooms usage -->
+    <div>
+      <div class="flex items-center justify-between text-sm mb-1.5">
+        <span class="text-content-secondary">Active Rooms</span>
+        <span class="text-content-primary font-medium">{currentRooms} / {limits.max_active_rooms}</span>
+      </div>
+      <div class="h-2 bg-surface-card rounded-full overflow-hidden">
+        <div
+          class="h-full bg-brand rounded-full transition-all duration-300"
+          style={`width: ${roomPercent}%`}
+        />
+      </div>
+    </div>
+  </div>
+
+  {(memberPercent >= 80 || roomPercent >= 80) && (
+    <p class="text-xs text-content-muted mt-4">
+      Running low on capacity? Contact us to upgrade your plan.
+    </p>
+  )}
+</div>

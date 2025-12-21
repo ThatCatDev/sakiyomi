@@ -1,0 +1,97 @@
+---
+import type { TeamMemberWithUser, TeamRole } from '../../lib/team/types';
+import MemberItem from './MemberItem.astro';
+
+interface Props {
+  members: TeamMemberWithUser[];
+  currentUserId: string;
+  currentUserRole: TeamRole;
+  teamSlug: string;
+}
+
+const { members, currentUserId, currentUserRole, teamSlug } = Astro.props;
+
+// Sort: owner first, then admins, then members
+const sortedMembers = [...members].sort((a, b) => {
+  const roleOrder = { owner: 0, admin: 1, member: 2 };
+  return roleOrder[a.role] - roleOrder[b.role];
+});
+---
+
+<div class="space-y-2" id="members-list" data-team-slug={teamSlug}>
+  {sortedMembers.map((member) => (
+    <MemberItem
+      member={member}
+      currentUserRole={currentUserRole}
+      isCurrentUser={member.user_id === currentUserId}
+      teamSlug={teamSlug}
+    />
+  ))}
+</div>
+
+<script>
+  import { updateMemberRole, removeMember } from '../../lib/team/api';
+
+  function initMembersList() {
+    const list = document.getElementById('members-list');
+    if (!list) return;
+
+    const teamSlug = list.dataset.teamSlug;
+    if (!teamSlug) return;
+
+    // Handle role changes
+    list.addEventListener('change', async (e) => {
+      const target = e.target as HTMLSelectElement;
+      if (!target.matches('[data-role-select]')) return;
+
+      const userId = target.dataset.userId;
+      const newRole = target.value as 'admin' | 'member';
+
+      if (!userId) return;
+
+      try {
+        await updateMemberRole(teamSlug, userId, newRole);
+      } catch (err) {
+        // Revert selection on error
+        window.showAlert?.({
+          type: 'error',
+          title: 'Failed to update role',
+          message: err instanceof Error ? err.message : 'An error occurred',
+        });
+        // Refresh to get correct state
+        window.location.reload();
+      }
+    });
+
+    // Handle member removal
+    list.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      const removeBtn = target.closest('[data-remove-member]') as HTMLElement;
+      if (!removeBtn) return;
+
+      const userId = removeBtn.dataset.userId;
+      const userName = removeBtn.dataset.userName;
+
+      if (!userId) return;
+
+      const confirmed = confirm(`Are you sure you want to remove ${userName} from the team?`);
+      if (!confirmed) return;
+
+      try {
+        await removeMember(teamSlug, userId);
+        // Remove the member element from DOM
+        const memberEl = document.querySelector(`[data-member-id="${userId}"]`);
+        memberEl?.remove();
+      } catch (err) {
+        window.showAlert?.({
+          type: 'error',
+          title: 'Failed to remove member',
+          message: err instanceof Error ? err.message : 'An error occurred',
+        });
+      }
+    });
+  }
+
+  initMembersList();
+  document.addEventListener('astro:page-load', initMembersList);
+</script>

@@ -24,10 +24,17 @@ const cookieHeader = Astro.request.headers.get('Cookie') ?? '';
 const supabase = createSupabaseServerClient(Astro.cookies, cookieHeader);
 const { data: { user } } = await supabase.auth.getUser();
 
-// Fetch room
+// Fetch room with team info
 const { data: room, error } = await supabase
   .from('rooms')
-  .select('*')
+  .select(`
+    *,
+    teams (
+      id,
+      name,
+      slug
+    )
+  `)
   .eq('id', id)
   .single();
 
@@ -35,8 +42,34 @@ if (error || !room) {
   return Astro.redirect('/404');
 }
 
+// If this is a team room, verify user has access
+const team = room.teams as { id: string; name: string; slug: string } | null;
+let isTeamMember = false;
+
+if (team) {
+  if (!user) {
+    // Team rooms require authentication
+    return Astro.redirect(`/login?redirect=/room/${id}`);
+  }
+
+  // Check if user is a team member
+  const { data: membership } = await supabase
+    .from('team_members')
+    .select('id')
+    .eq('team_id', team.id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!membership) {
+    // User is not a team member, redirect to teams page
+    return Astro.redirect('/teams');
+  }
+
+  isTeamMember = true;
+}
+
 // Check if user has joined this room
-const sessionId = Astro.cookies.get('session_id')?.value;
+let sessionId = Astro.cookies.get('session_id')?.value;
 let currentParticipant: Participant | null = null;
 
 if (sessionId) {
@@ -47,6 +80,68 @@ if (sessionId) {
     .eq('session_id', sessionId)
     .single();
   currentParticipant = data as Participant | null;
+}
+
+// Auto-join signed-in users who haven't joined yet
+if (user && !currentParticipant) {
+  // Get user's profile for display name
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name, email, avatar_url')
+    .eq('id', user.id)
+    .single();
+
+  const displayName = profile?.display_name || profile?.email || user.email || 'Anonymous';
+
+  // Create session ID if needed
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    Astro.cookies.set('session_id', sessionId, {
+      path: '/',
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
+  }
+
+  // Check if this user is the room creator
+  const isCreator = room.creator_session_id === sessionId;
+
+  // Check if there's already a manager
+  const { data: existingManager } = await supabase
+    .from('room_participants')
+    .select('id')
+    .eq('room_id', id)
+    .eq('role', 'manager')
+    .limit(1)
+    .single();
+
+  const role = (isCreator && !existingManager) ? 'manager' : 'member';
+
+  // Generate random avatar
+  const avatarStyles = ['adventurer', 'big-smile', 'bottts', 'fun-emoji', 'lorelei', 'micah', 'notionists', 'pixel-art', 'thumbs', 'avataaars'];
+  const avatarStyle = avatarStyles[Math.floor(Math.random() * avatarStyles.length)];
+  const avatarSeed = `auto-${Date.now()}`;
+
+  // Auto-join the user
+  const { data: newParticipant, error: joinError } = await supabase
+    .from('room_participants')
+    .insert({
+      room_id: id,
+      name: displayName,
+      user_id: user.id,
+      session_id: sessionId,
+      role,
+      avatar_style: avatarStyle,
+      avatar_seed: avatarSeed,
+    })
+    .select()
+    .single();
+
+  if (!joinError && newParticipant) {
+    currentParticipant = newParticipant as Participant;
+  }
 }
 
 // Fetch all participants (initial load)
@@ -210,6 +305,7 @@ const appName = getAppName(Astro.url.hostname);
   appName,
   supabaseUrl,
   supabaseAnonKey,
+  teamSlug: team?.slug || null,
 })} />
 
 <script>

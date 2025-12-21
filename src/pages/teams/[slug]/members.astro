@@ -1,0 +1,176 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Header from '../../../components/Header.astro';
+import TeamHeader from '../../../components/team/TeamHeader.astro';
+import TeamSidebar from '../../../components/team/TeamSidebar.astro';
+import MembersList from '../../../components/team/MembersList.astro';
+import InvitationsList from '../../../components/team/InvitationsList.astro';
+import InviteModal from '../../../components/team/InviteModal.astro';
+import LeaveTeamModal from '../../../components/team/LeaveTeamModal.astro';
+import { createSupabaseServerClient } from '../../../lib/supabase';
+import { canManageTeam, type Team, type TeamRole, type TeamMemberWithUser, type TeamInvitation } from '../../../lib/team/types';
+
+const { slug } = Astro.params;
+
+// Get authenticated user
+const cookieHeader = Astro.request.headers.get('Cookie') ?? '';
+const supabase = createSupabaseServerClient(Astro.cookies, cookieHeader);
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  return Astro.redirect(`/login?redirect=/teams/${slug}/members`);
+}
+
+// Get team
+const { data: team } = await supabase
+  .from('teams')
+  .select('*')
+  .eq('slug', slug)
+  .single();
+
+if (!team) {
+  return Astro.redirect('/teams');
+}
+
+// Check membership
+const { data: membership } = await supabase
+  .from('team_members')
+  .select('role')
+  .eq('team_id', team.id)
+  .eq('user_id', user.id)
+  .single();
+
+if (!membership) {
+  return Astro.redirect('/teams');
+}
+
+const userRole = membership.role as TeamRole;
+const canManage = canManageTeam(userRole);
+
+// Get all members with user info
+const { data: membersData } = await supabase
+  .from('team_members')
+  .select(`
+    id,
+    team_id,
+    user_id,
+    role,
+    joined_at
+  `)
+  .eq('team_id', team.id)
+  .order('joined_at', { ascending: true });
+
+// Fetch user details for each member
+const members: TeamMemberWithUser[] = [];
+if (membersData) {
+  for (const member of membersData) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name, email, avatar_url')
+      .eq('id', member.user_id)
+      .single();
+
+    members.push({
+      ...member,
+      role: member.role as TeamRole,
+      user: profile ? {
+        id: member.user_id,
+        display_name: profile.display_name,
+        email: profile.email,
+        avatar_url: profile.avatar_url,
+      } : undefined,
+    });
+  }
+}
+
+// Get pending invitations (for admins/owners only)
+let invitations: TeamInvitation[] = [];
+if (canManage) {
+  const { data: invitationsData } = await supabase
+    .from('team_invitations')
+    .select('*')
+    .eq('team_id', team.id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  invitations = (invitationsData || []) as TeamInvitation[];
+}
+---
+
+<Layout title={`Members - ${team.name}`}>
+  <Header user={user} />
+
+  <main class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-4">
+      <a href="/teams" class="text-sm text-content-muted hover:text-content-primary transition-colors">
+        &larr; Back to Teams
+      </a>
+    </div>
+
+    <TeamHeader
+      team={team as Team}
+      userRole={userRole}
+      memberCount={members.length}
+    />
+
+    <TeamSidebar
+      teamSlug={slug!}
+      userRole={userRole}
+      currentPage="members"
+    />
+
+    <div class="space-y-8">
+      <!-- Members Section -->
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-content-primary">Members</h2>
+          {canManage && (
+            <button
+              type="button"
+              onclick="openInviteModal?.()"
+              class="flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Invite
+            </button>
+          )}
+        </div>
+
+        <MembersList
+          members={members}
+          currentUserId={user.id}
+          currentUserRole={userRole}
+          teamSlug={slug!}
+        />
+      </section>
+
+      <!-- Pending Invitations Section (Admins/Owners only) -->
+      {canManage && invitations.length > 0 && (
+        <section>
+          <h2 class="text-lg font-semibold text-content-primary mb-4">Pending Invitations</h2>
+          <InvitationsList
+            invitations={invitations}
+            teamSlug={slug!}
+          />
+        </section>
+      )}
+    </div>
+
+    {userRole !== 'owner' && (
+      <div class="mt-8 pt-8 border-t border-border-default">
+        <button
+          type="button"
+          onclick="openLeaveTeamModal?.()"
+          class="text-sm text-content-muted hover:text-status-warning transition-colors"
+        >
+          Leave this team
+        </button>
+      </div>
+    )}
+  </main>
+
+  <InviteModal teamSlug={slug!} />
+  <LeaveTeamModal teamSlug={slug!} teamName={team.name} />
+</Layout>

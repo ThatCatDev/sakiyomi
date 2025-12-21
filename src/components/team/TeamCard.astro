@@ -1,0 +1,48 @@
+---
+import { getRoleColor, getRoleLabel, type TeamWithMembership } from '../../lib/team/types';
+
+interface Props {
+  team: TeamWithMembership;
+}
+
+const { team } = Astro.props;
+---
+
+<a
+  href={`/teams/${team.slug}`}
+  class="block bg-surface-card rounded-2xl border border-border-default p-6 hover:border-brand transition-colors group"
+>
+  <div class="flex items-start gap-4">
+    {team.avatar_url ? (
+      <img
+        src={team.avatar_url}
+        alt={team.name}
+        class="w-12 h-12 rounded-xl object-cover"
+      />
+    ) : (
+      <div class="w-12 h-12 rounded-xl bg-brand-light flex items-center justify-center text-brand text-xl font-bold">
+        {team.name.charAt(0).toUpperCase()}
+      </div>
+    )}
+
+    <div class="flex-1 min-w-0">
+      <h3 class="text-lg font-semibold text-content-primary group-hover:text-brand transition-colors truncate">
+        {team.name}
+      </h3>
+      <p class="text-sm text-content-muted">/{team.slug}</p>
+    </div>
+
+    <span class={`text-xs px-2 py-1 rounded-full ${getRoleColor(team.role)}`}>
+      {getRoleLabel(team.role)}
+    </span>
+  </div>
+
+  <div class="mt-4 flex items-center gap-4 text-sm text-content-secondary">
+    <span class="flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+      {team.member_count || 0} {team.member_count === 1 ? 'member' : 'members'}
+    </span>
+  </div>
+</a>

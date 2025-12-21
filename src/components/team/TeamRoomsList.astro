@@ -1,0 +1,84 @@
+---
+import type { TeamRole } from '../../lib/team/types';
+import { canManageTeam } from '../../lib/team/types';
+
+interface Room {
+  id: string;
+  name: string;
+  created_at: string;
+  last_activity_at: string | null;
+}
+
+interface Props {
+  rooms: Room[];
+  teamSlug: string;
+  userRole: TeamRole;
+}
+
+const { rooms, teamSlug, userRole } = Astro.props;
+const canCreate = canManageTeam(userRole);
+
+function formatRelativeTime(dateStr: string | null): string {
+  if (!dateStr) return 'No activity';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+---
+
+<div>
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold text-content-primary">Team Rooms</h2>
+    {canCreate && (
+      <button
+        type="button"
+        onclick="openCreateTeamRoomModal?.()"
+        class="flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        New Room
+      </button>
+    )}
+  </div>
+
+  {rooms.length === 0 ? (
+    <div class="text-center py-12 bg-surface-elevated rounded-xl">
+      <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-surface-card flex items-center justify-center">
+        <svg class="w-6 h-6 text-content-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+        </svg>
+      </div>
+      <h3 class="text-content-primary font-medium mb-1">No rooms yet</h3>
+      <p class="text-sm text-content-muted">
+        {canCreate ? 'Create a room to start estimating with your team.' : 'Ask an admin to create a room.'}
+      </p>
+    </div>
+  ) : (
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {rooms.map((room) => (
+        <a
+          href={`/room/${room.id}`}
+          class="block p-4 bg-surface-elevated rounded-xl border border-border-default hover:border-brand transition-colors group"
+        >
+          <h3 class="font-medium text-content-primary group-hover:text-brand transition-colors truncate">
+            {room.name}
+          </h3>
+          <p class="text-xs text-content-muted mt-1">
+            Last activity: {formatRelativeTime(room.last_activity_at)}
+          </p>
+        </a>
+      ))}
+    </div>
+  )}
+</div>

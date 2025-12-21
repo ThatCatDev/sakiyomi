@@ -26,7 +26,7 @@ const appName = getAppName(Astro.url.hostname);
 
       <!-- Login Card -->
       <div class="bg-surface-card rounded-2xl shadow-xl p-8 border border-border-default">
-        <form id="login-form" class="space-y-6">
+        <form id="login-form" method="POST" action="#" class="space-y-6">
           <div>
             <label for="email" class="block text-sm font-medium text-content-secondary mb-2">
               Email address
@@ -42,9 +42,14 @@ const appName = getAppName(Astro.url.hostname);
           </div>
 
           <div>
-            <label for="password" class="block text-sm font-medium text-content-secondary mb-2">
-              Password
-            </label>
+            <div class="flex items-center justify-between mb-2">
+              <label for="password" class="block text-sm font-medium text-content-secondary">
+                Password
+              </label>
+              <a href="/forgot-password" class="text-sm text-brand hover:text-brand-hover transition-colors">
+                Forgot password?
+              </a>
+            </div>
             <input
               type="password"
               id="password"
@@ -101,7 +106,10 @@ const appName = getAppName(Astro.url.hostname);
       errorMessage.textContent = error.message;
       errorMessage.classList.remove('hidden');
     } else {
-      window.location.href = '/';
+      // Check for redirect parameter
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirect') || '/';
+      window.location.href = redirectTo;
     }
   });
 </script>

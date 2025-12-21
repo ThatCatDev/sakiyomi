@@ -125,3 +125,146 @@ test.describe('Rooms', () => {
     await expect(page).toHaveURL('/404');
   });
 });
+
+test.describe('Auto-Join for Signed-In Users', () => {
+  const testPassword = 'TestPassword123!';
+
+  // Helper to create a unique user and sign up
+  async function signUpUser(page: import('@playwright/test').Page, emailPrefix: string) {
+    const email = `${emailPrefix}${Date.now()}@test.com`;
+    await page.goto('/signup');
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', testPassword);
+    await page.fill('input[name="confirm-password"]', testPassword);
+    await page.click('button[type="submit"]');
+    await page.waitForURL('/');
+    return email;
+  }
+
+  test('signed-in user should be auto-joined to room without name prompt', async ({ page, browser }) => {
+    // First, create a room with an anonymous user
+    await page.goto('/');
+    await page.click('#create-room-btn');
+    await page.fill('#room-name', 'Auto Join Test Room');
+    await page.click('#create-modal button[type="submit"]');
+    await page.waitForURL(/\/room\//);
+
+    // Get room URL
+    const roomUrl = page.url();
+
+    // Open new browser context for signed-in user
+    const newContext = await browser.newContext();
+    const newPage = await newContext.newPage();
+
+    // Sign up new user
+    await signUpUser(newPage, 'autojoin');
+
+    // Visit the room
+    await newPage.goto(roomUrl);
+
+    // Should NOT see join form (auto-joined)
+    await expect(newPage.locator('#join-form')).not.toBeVisible();
+
+    // Should see voting interface directly
+    await expect(newPage.locator('#your-vote-section')).toBeVisible();
+
+    await newContext.close();
+  });
+
+  test('signed-in user should appear in participants list with email as name', async ({ page, browser }) => {
+    // Create a room with an anonymous user
+    await page.goto('/');
+    await page.click('#create-room-btn');
+    await page.fill('#room-name', 'Participant Test Room');
+    await page.click('#create-modal button[type="submit"]');
+    await page.waitForURL(/\/room\//);
+
+    const roomUrl = page.url();
+
+    // Open new browser context for signed-in user
+    const newContext = await browser.newContext();
+    const newPage = await newContext.newPage();
+
+    // Sign up new user
+    const email = await signUpUser(newPage, 'participant');
+
+    // Visit the room
+    await newPage.goto(roomUrl);
+
+    // Should see themselves in participants list
+    await expect(newPage.locator(`text=${email}`).first()).toBeVisible();
+
+    await newContext.close();
+  });
+
+  test('signed-in user with display name should use display name in room', async ({ page, browser }) => {
+    // Create a room with an anonymous user
+    await page.goto('/');
+    await page.click('#create-room-btn');
+    await page.fill('#room-name', 'Display Name Test Room');
+    await page.click('#create-modal button[type="submit"]');
+    await page.waitForURL(/\/room\//);
+
+    const roomUrl = page.url();
+
+    // Open new browser context for signed-in user
+    const newContext = await browser.newContext();
+    const newPage = await newContext.newPage();
+
+    // Sign up and set display name
+    await signUpUser(newPage, 'displayname');
+
+    const displayName = `Test User ${Date.now()}`;
+    await newPage.goto('/profile');
+    await newPage.fill('input#display_name', displayName);
+    await newPage.click('button:has-text("Save Changes")');
+    await newPage.waitForSelector('#profile-success:visible');
+
+    // Visit the room
+    await newPage.goto(roomUrl);
+
+    // Should see display name in participants list
+    await expect(newPage.locator(`text=${displayName}`).first()).toBeVisible();
+
+    await newContext.close();
+  });
+
+  test('anonymous user should still see join form', async ({ page, browser }) => {
+    // Create a room
+    await page.goto('/');
+    await page.click('#create-room-btn');
+    await page.fill('#room-name', 'Anonymous Join Test');
+    await page.click('#create-modal button[type="submit"]');
+    await page.waitForURL(/\/room\//);
+
+    const roomUrl = page.url();
+
+    // Open new browser context (anonymous user)
+    const newContext = await browser.newContext();
+    const newPage = await newContext.newPage();
+
+    // Visit the room as anonymous
+    await newPage.goto(roomUrl);
+
+    // Should see join form
+    await expect(newPage.locator('#join-form')).toBeVisible();
+    await expect(newPage.locator('input[name="name"]')).toBeVisible();
+
+    await newContext.close();
+  });
+
+  test('creator of room should still be manager even when signed in', async ({ page }) => {
+    // Sign up user
+    await signUpUser(page, 'roomcreator');
+
+    // Create a room
+    await page.goto('/');
+    await page.click('#create-room-btn');
+    await page.fill('#room-name', 'Creator Manager Test');
+    await page.click('#create-modal button[type="submit"]');
+    await page.waitForURL(/\/room\//);
+
+    // Should see manager controls
+    await expect(page.locator('#manager-controls')).toBeVisible();
+  });
+});

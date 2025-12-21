@@ -1,0 +1,84 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import TeamList from '../../components/team/TeamList.astro';
+import CreateTeamModal from '../../components/team/CreateTeamModal.astro';
+import { createSupabaseServerClient } from '../../lib/supabase';
+import type { TeamWithMembership } from '../../lib/team/types';
+
+// Get authenticated user
+const cookieHeader = Astro.request.headers.get('Cookie') ?? '';
+const supabase = createSupabaseServerClient(Astro.cookies, cookieHeader);
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  return Astro.redirect('/login?redirect=/teams');
+}
+
+// Get user's teams
+const { data: memberships } = await supabase
+  .from('team_members')
+  .select(`
+    role,
+    teams (
+      id,
+      name,
+      slug,
+      avatar_url,
+      created_at
+    )
+  `)
+  .eq('user_id', user.id)
+  .order('joined_at', { ascending: false });
+
+// Get member counts for each team
+const teams: TeamWithMembership[] = [];
+
+if (memberships) {
+  for (const membership of memberships) {
+    if (!membership.teams) continue;
+
+    const team = membership.teams as any;
+
+    // Get member count
+    const { count } = await supabase
+      .from('team_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('team_id', team.id);
+
+    teams.push({
+      ...team,
+      role: membership.role,
+      member_count: count || 0,
+    });
+  }
+}
+---
+
+<Layout title="Teams">
+  <Header user={user} />
+
+  <main class="container mx-auto px-4 py-8 max-w-6xl">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-content-primary">Your Teams</h1>
+        <p class="text-content-secondary mt-1">Manage your teams and collaborate on estimation sessions.</p>
+      </div>
+
+      <button
+        type="button"
+        onclick="openCreateTeamModal?.()"
+        class="flex items-center gap-2 px-4 py-2.5 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Create Team
+      </button>
+    </div>
+
+    <TeamList teams={teams} />
+  </main>
+
+  <CreateTeamModal />
+</Layout>
