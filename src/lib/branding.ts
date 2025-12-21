@@ -6,6 +6,7 @@ export interface BrandConfig {
   tagline: string;
   description: string;
   keywords: string[];
+  docsUrl: string;
 }
 
 const BRAND_CONFIG: Record<string, BrandConfig> = {
@@ -15,6 +16,7 @@ const BRAND_CONFIG: Record<string, BrandConfig> = {
     tagline: 'Free Online Story Point Estimation',
     description: 'Free online story point estimation tool for agile teams. No signup required. Real-time team voting for sprint planning and collaboration.',
     keywords: ['story points', 'story point estimation', 'agile estimation', 'sprint planning', 'scrum estimation', 'team estimation', 'agile team tools', 'online estimation tool', 'free estimation tool', 'agile voting', 'sprint estimation'],
+    docsUrl: 'https://docs.storypoint-estimate.com',
   },
   'www.storypoint-estimate.com': {
     name: 'Storypoint Estimate',
@@ -22,6 +24,7 @@ const BRAND_CONFIG: Record<string, BrandConfig> = {
     tagline: 'Free Online Story Point Estimation',
     description: 'Free online story point estimation tool for agile teams. No signup required. Real-time team voting for sprint planning and collaboration.',
     keywords: ['story points', 'story point estimation', 'agile estimation', 'sprint planning', 'scrum estimation', 'team estimation', 'agile team tools', 'online estimation tool', 'free estimation tool', 'agile voting', 'sprint estimation'],
+    docsUrl: 'https://docs.storypoint-estimate.com',
   },
 };
 
@@ -31,6 +34,7 @@ const DEFAULT_BRAND: BrandConfig = {
   tagline: 'Free Online Story Point Estimation',
   description: 'Free online story point estimation tool for agile teams. No signup required. Real-time team voting for sprint planning and collaboration.',
   keywords: ['story points', 'story point estimation', 'agile estimation', 'sprint planning', 'scrum estimation', 'team estimation', 'agile team tools', 'online estimation tool', 'free estimation tool', 'agile voting', 'sprint estimation'],
+  docsUrl: 'https://docs.sakiyomi.dev',
 };
 
 export function getBrandConfig(hostname: string): BrandConfig {
@@ -51,4 +55,8 @@ export function getDescription(hostname: string): string {
 
 export function getKeywords(hostname: string): string {
   return getBrandConfig(hostname).keywords.join(', ');
+}
+
+export function getDocsUrl(hostname: string): string {
+  return getBrandConfig(hostname).docsUrl;
 }

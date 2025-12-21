@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import UserMenu from '../../components/UserMenu.astro';
+import Header from '../../components/Header.astro';
 import { createSupabaseServerClient } from '../../lib/supabase';
 import { getAppName } from '../../lib/branding';
 
@@ -73,68 +73,29 @@ const appName = getAppName(Astro.url.hostname);
 
 <Layout title={`${room.name} - ${appName}`}>
   <main class="min-h-screen flex flex-col">
-    <!-- Navigation -->
-    <nav class="border-b border-slate-800 flex-shrink-0">
-      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <a href="/" class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <span class="text-lg font-bold text-white hidden sm:inline">{appName}</span>
-          </a>
-          <span class="text-slate-500">|</span>
-          <h1 class="text-white font-medium truncate max-w-[200px] sm:max-w-none" id="room-name-display">{room.name}</h1>
-          {currentParticipant && (
-            <button
-              id="open-settings-btn"
-              class="text-slate-400 hover:text-white transition-colors p-1"
-              title="Room Settings"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
-          )}
-        </div>
-
-        <div class="flex items-center gap-3">
-          <!-- Share Link -->
-          <div class="hidden md:flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700">
-            <input
-              type="text"
-              readonly
-              value={roomUrl}
-              id="room-url"
-              class="w-48 bg-transparent text-white text-sm focus:outline-none"
-            />
-            <button
-              id="copy-btn"
-              class="text-slate-400 hover:text-white transition-colors"
-              title="Copy link"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="copy-icon">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              <svg class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="check-icon">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-            </button>
-          </div>
-
-          {user ? (
-            <UserMenu email={user.email || ''} />
-          ) : (
-            <a href="/login" class="text-slate-300 hover:text-white transition-colors text-sm">
-              Sign in
-            </a>
-          )}
-        </div>
+    <Header user={user} showRoomInfo={true} roomName={room.name} showSettings={!!currentParticipant}>
+      <div slot="extra" class="hidden md:flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700">
+        <input
+          type="text"
+          readonly
+          value={roomUrl}
+          id="room-url"
+          class="w-48 bg-transparent text-white text-sm focus:outline-none"
+        />
+        <button
+          id="copy-btn"
+          class="text-slate-400 hover:text-white transition-colors"
+          title="Copy link"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="copy-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <svg class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="check-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
       </div>
-    </nav>
+    </Header>
 
     <!-- Main Content with Sidebar -->
     <div class="flex-1 flex overflow-hidden">
