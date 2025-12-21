@@ -1,0 +1,36 @@
+---
+title: Storypoint Estimate
+description: Free, open-source story point estimation for agile teams.
+template: splash
+hero:
+  tagline: Free, real-time story point estimation for agile teams. No signup required.
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Get Started
+      link: /getting-started/introduction/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/thatcatdev/sakiyomi
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Features
+
+<CardGrid stagger>
+  <Card title="No Signup Required" icon="rocket">
+    Start estimating in seconds. Just create a room and share the link.
+  </Card>
+  <Card title="Real-time Collaboration" icon="approve-check">
+    See who's voted, reveal all estimates simultaneously, and discuss.
+  </Card>
+  <Card title="Open Source" icon="github">
+    MIT licensed. Self-host on your own infrastructure or contribute.
+  </Card>
+  <Card title="Privacy First" icon="random">
+    Votes are hidden until revealed. No anchoring bias.
+  </Card>
+</CardGrid>

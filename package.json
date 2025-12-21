@@ -2,6 +2,7 @@
   "name": "sakiyomi",
   "type": "module",
   "version": "0.0.1",
+  "license": "MIT",
   "scripts": {
     "dev": "bunx --bun astro dev",
     "build": "bunx --bun astro build",
