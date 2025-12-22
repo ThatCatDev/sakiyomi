@@ -27,7 +27,7 @@ test.describe('Authentication', () => {
   test('should display signup page correctly', async ({ page }) => {
     await page.goto('/signup');
 
-    await expect(page.locator('h1')).toHaveText('Sakiyomi');
+    await expect(page.locator('h1').first()).toHaveText('Sakiyomi');
     await expect(page.locator('text=Create your account')).toBeVisible();
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
