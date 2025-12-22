@@ -53,17 +53,22 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
   const isCreator = room?.creator_session_id === sessionId;
   const role = (isCreator && !existingManager) ? 'manager' : 'member';
 
-  // Check if participant already exists
-  const { data: existing } = await supabase
+  // Try to insert new participant
+  const { error: insertError } = await supabase
     .from('room_participants')
-    .select('id')
-    .eq('room_id', roomId)
-    .eq('session_id', sessionId)
-    .single();
+    .insert({
+      room_id: roomId,
+      name: name.trim(),
+      user_id: user?.id || null,
+      session_id: sessionId,
+      role,
+      avatar_style: avatarStyle,
+      avatar_seed: avatarSeed,
+    });
 
-  if (existing) {
-    // Update existing participant name and avatar (keep existing role)
-    const { error } = await supabase
+  // If duplicate key error, update existing participant instead (preserves role)
+  if (insertError?.code === '23505') {
+    const { error: updateError } = await supabase
       .from('room_participants')
       .update({
         name: name.trim(),
@@ -71,34 +76,20 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
         avatar_style: avatarStyle,
         avatar_seed: avatarSeed,
       })
-      .eq('id', existing.id);
+      .eq('room_id', roomId)
+      .eq('session_id', sessionId);
 
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
+    if (updateError) {
+      return new Response(JSON.stringify({ error: updateError.message }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
-  } else {
-    // Create new participant with role and avatar
-    const { error } = await supabase
-      .from('room_participants')
-      .insert({
-        room_id: roomId,
-        name: name.trim(),
-        user_id: user?.id || null,
-        session_id: sessionId,
-        role,
-        avatar_style: avatarStyle,
-        avatar_seed: avatarSeed,
-      });
-
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+  } else if (insertError) {
+    return new Response(JSON.stringify({ error: insertError.message }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   return new Response(JSON.stringify({ success: true, sessionId }), {

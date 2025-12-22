@@ -176,4 +176,112 @@ test.describe('Room Participants', () => {
     const src = await avatar.getAttribute('src');
     expect(src).toContain('api.dicebear.com');
   });
+
+  test.describe('Duplicate Join Handling', () => {
+    test('should handle rejoining with updated name without error', async ({ page }) => {
+      await page.goto('/');
+
+      // Create and join room
+      await createRoom(page);
+      const roomUrl = page.url();
+
+      await page.fill('input[name="name"]', 'Original Name');
+      await page.click('button:has-text("Join Room")');
+      await expect(page.locator('#vote-cards-section')).toBeVisible();
+      await expect(page.locator('#current-user-name')).toHaveText('Original Name');
+
+      // Leave the room
+      await page.click('#leave-room-btn');
+      await expect(page.locator('#leave-modal')).toBeVisible();
+      await page.click('#confirm-leave-btn');
+
+      // Should see join form again
+      await expect(page.locator('#join-section')).toBeVisible();
+
+      // Rejoin with a different name - should not cause duplicate key error
+      await page.fill('input[name="name"]', 'Updated Name');
+      await page.click('button:has-text("Join Room")');
+
+      // Should successfully rejoin
+      await expect(page.locator('#vote-cards-section')).toBeVisible();
+      await expect(page.locator('#current-user-name')).toHaveText('Updated Name');
+    });
+
+    test('should handle rapid double-click on join without error', async ({ page }) => {
+      await page.goto('/');
+
+      // Create room
+      await createRoom(page);
+
+      await page.fill('input[name="name"]', 'Double Click User');
+
+      // Simulate rapid double-click by clicking twice quickly
+      const joinButton = page.locator('button:has-text("Join Room")');
+      await joinButton.dblclick();
+
+      // Should successfully join without error
+      await expect(page.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('#current-user-name')).toHaveText('Double Click User');
+
+      // Should only have one participant entry
+      await expect(page.locator('#participants-list li')).toHaveCount(1);
+    });
+
+    test('should preserve manager role when rejoining', async ({ page }) => {
+      await page.goto('/');
+
+      // Create and join room as creator (becomes manager)
+      await createRoom(page);
+
+      await page.fill('input[name="name"]', 'Manager User');
+      await page.click('button:has-text("Join Room")');
+      await expect(page.locator('#vote-cards-section')).toBeVisible();
+
+      // Verify we are a manager
+      await expect(page.locator('#manager-controls')).toBeVisible();
+
+      // Leave the room
+      await page.click('#leave-room-btn');
+      await expect(page.locator('#leave-modal')).toBeVisible();
+      await page.click('#confirm-leave-btn');
+
+      // Rejoin with updated name
+      await expect(page.locator('#join-section')).toBeVisible();
+      await page.fill('input[name="name"]', 'Still Manager');
+      await page.click('button:has-text("Join Room")');
+
+      // Should still be a manager (role preserved)
+      await expect(page.locator('#vote-cards-section')).toBeVisible();
+      await expect(page.locator('#manager-controls')).toBeVisible();
+      await expect(page.locator('#current-user-name')).toHaveText('Still Manager');
+    });
+
+    test('should not show duplicate key error on form resubmit', async ({ page }) => {
+      await page.goto('/');
+
+      // Create room
+      await createRoom(page);
+
+      await page.fill('input[name="name"]', 'Resubmit User');
+      await page.click('button:has-text("Join Room")');
+
+      // Wait for join to complete
+      await expect(page.locator('#vote-cards-section')).toBeVisible();
+
+      // Go back in browser history (simulates back button after form submit)
+      await page.goBack();
+
+      // If we see the join form, try to submit again
+      if (await page.locator('#join-section').isVisible()) {
+        await page.fill('input[name="name"]', 'Resubmit User Again');
+        await page.click('button:has-text("Join Room")');
+
+        // Should handle gracefully without error
+        await expect(page.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+
+        // No error message should be visible
+        await expect(page.locator('#join-error')).not.toBeVisible();
+      }
+    });
+  });
 });
