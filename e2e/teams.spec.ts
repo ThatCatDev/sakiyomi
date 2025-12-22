@@ -25,7 +25,7 @@ test.describe('Teams Feature', () => {
       await signUpUser(page, 'teamaccess');
       await page.goto('/teams');
       await expect(page).toHaveURL('/teams');
-      await expect(page.locator('h1')).toContainText('Teams');
+      await expect(page.getByRole('heading', { name: 'Your Teams' })).toBeVisible();
     });
   });
 
@@ -33,20 +33,21 @@ test.describe('Teams Feature', () => {
     test('should display create team button', async ({ page }) => {
       await signUpUser(page, 'createteam');
       await page.goto('/teams');
-      await expect(page.locator('button:has-text("Create Team")')).toBeVisible();
+      await expect(page.locator('main button:has-text("Create Team")')).toBeVisible();
     });
 
     test('should open create team modal', async ({ page }) => {
       await signUpUser(page, 'createmodal');
       await page.goto('/teams');
-      await page.click('button:has-text("Create Team")');
-      await expect(page.locator('text=Create a New Team')).toBeVisible();
+      await page.locator('main button:has-text("Create Team")').click();
+      await expect(page.locator('#create-team-modal')).toBeVisible();
+      await expect(page.locator('#create-team-modal-title')).toContainText('Create a Team');
     });
 
     test('should create a team successfully', async ({ page }) => {
       await signUpUser(page, 'newteam');
       await page.goto('/teams');
-      await page.click('button:has-text("Create Team")');
+      await page.locator('main button:has-text("Create Team")').click();
 
       const teamName = `Test Team ${Date.now()}`;
       const teamSlug = `test-team-${Date.now()}`;
@@ -56,8 +57,8 @@ test.describe('Teams Feature', () => {
       await page.click('button[type="submit"]:has-text("Create Team")');
 
       // Should redirect to team page or show in list
-      await page.waitForTimeout(1000);
-      await expect(page.locator(`text=${teamName}`)).toBeVisible();
+      await expect(page).toHaveURL(new RegExp(`/teams/${teamSlug}`));
+      await expect(page.locator(`main:has-text("${teamName}")`)).toBeVisible();
     });
 
     test('should show error for duplicate team slug', async ({ page }) => {
@@ -65,28 +66,30 @@ test.describe('Teams Feature', () => {
       await page.goto('/teams');
 
       // Create first team
-      await page.click('button:has-text("Create Team")');
+      await page.locator('main button:has-text("Create Team")').click();
       const slug = `dup-slug-${Date.now()}`;
       await page.fill('input[name="name"]', 'First Team');
       await page.fill('input[name="slug"]', slug);
-      await page.click('button[type="submit"]:has-text("Create Team")');
-      await page.waitForTimeout(500);
+      await page.locator('#create-team-modal button[type="submit"]').click();
+
+      // Wait for redirect to team page after creation
+      await page.waitForURL(new RegExp(`/teams/${slug}`));
 
       // Try to create second team with same slug
       await page.goto('/teams');
-      await page.click('button:has-text("Create Team")');
+      await page.locator('main button:has-text("Create Team")').click();
       await page.fill('input[name="name"]', 'Second Team');
       await page.fill('input[name="slug"]', slug);
-      await page.click('button[type="submit"]:has-text("Create Team")');
+      await page.locator('#create-team-modal button[type="submit"]').click();
 
       // Should show error
-      await expect(page.locator('text=already exists')).toBeVisible();
+      await expect(page.locator('#create-team-error')).toContainText('already taken');
     });
 
     test('should validate team slug format', async ({ page }) => {
       await signUpUser(page, 'slugvalidate');
       await page.goto('/teams');
-      await page.click('button:has-text("Create Team")');
+      await page.locator('main button:has-text("Create Team")').click();
 
       const slugInput = page.locator('input[name="slug"]');
 
@@ -117,17 +120,17 @@ test.describe('Teams Feature', () => {
       await page.goto('/teams');
 
       // Create a team first
-      await page.click('button:has-text("Create Team")');
+      await page.locator('main button:has-text("Create Team")').click();
       const teamName = `Details Team ${Date.now()}`;
       const teamSlug = `details-team-${Date.now()}`;
       await page.fill('input[name="name"]', teamName);
       await page.fill('input[name="slug"]', teamSlug);
-      await page.click('button[type="submit"]:has-text("Create Team")');
-      await page.waitForTimeout(500);
+      await page.locator('#create-team-modal button[type="submit"]').click();
 
-      // Navigate to team page
-      await page.click(`text=${teamName}`);
+      // Should redirect to team page after creation
       await expect(page).toHaveURL(new RegExp(`/teams/${teamSlug}`));
+      // Team name should be visible on the page
+      await expect(page.locator(`text=${teamName}`).first()).toBeVisible();
     });
   });
 
@@ -137,19 +140,21 @@ test.describe('Teams Feature', () => {
       await page.goto('/teams');
 
       // Create a team
-      await page.click('button:has-text("Create Team")');
+      await page.locator('main button:has-text("Create Team")').click();
       const teamSlug = `owner-team-${Date.now()}`;
       await page.fill('input[name="name"]', 'Owner Team');
       await page.fill('input[name="slug"]', teamSlug);
-      await page.click('button[type="submit"]:has-text("Create Team")');
-      await page.waitForTimeout(500);
+      await page.locator('#create-team-modal button[type="submit"]').click();
+
+      // Wait for redirect to team page after creation
+      await page.waitForURL(new RegExp(`/teams/${teamSlug}`));
 
       // Navigate to members page
       await page.goto(`/teams/${teamSlug}/members`);
 
       // Should show the owner badge
-      await expect(page.locator('text=Owner').first()).toBeVisible();
-      await expect(page.locator(`text=${email}`)).toBeVisible();
+      await expect(page.locator('main:has-text("Owner")')).toBeVisible();
+      await expect(page.locator(`main:has-text("${email}")`)).toBeVisible();
     });
   });
 
@@ -159,16 +164,18 @@ test.describe('Teams Feature', () => {
       await page.goto('/teams');
 
       // Create a team
-      await page.click('button:has-text("Create Team")');
+      await page.locator('main button:has-text("Create Team")').click();
       const teamSlug = `settings-team-${Date.now()}`;
       await page.fill('input[name="name"]', 'Settings Team');
       await page.fill('input[name="slug"]', teamSlug);
-      await page.click('button[type="submit"]:has-text("Create Team")');
-      await page.waitForTimeout(500);
+      await page.locator('#create-team-modal button[type="submit"]').click();
+
+      // Wait for redirect to team page after creation
+      await page.waitForURL(new RegExp(`/teams/${teamSlug}`));
 
       // Navigate to settings page
       await page.goto(`/teams/${teamSlug}/settings`);
-      await expect(page.locator('h1')).toContainText('Settings');
+      await expect(page.locator('main h1')).toContainText('Settings');
     });
   });
 
@@ -178,18 +185,20 @@ test.describe('Teams Feature', () => {
       await page.goto('/teams');
 
       // Create a team
-      await page.click('button:has-text("Create Team")');
+      await page.locator('main button:has-text("Create Team")').click();
       const teamSlug = `invite-team-${Date.now()}`;
       await page.fill('input[name="name"]', 'Invite Team');
       await page.fill('input[name="slug"]', teamSlug);
-      await page.click('button[type="submit"]:has-text("Create Team")');
-      await page.waitForTimeout(500);
+      await page.locator('#create-team-modal button[type="submit"]').click();
+
+      // Wait for redirect to team page after creation
+      await page.waitForURL(new RegExp(`/teams/${teamSlug}`));
 
       // Navigate to members page
       await page.goto(`/teams/${teamSlug}/members`);
 
-      // Should show invite button
-      await expect(page.locator('button:has-text("Invite")')).toBeVisible();
+      // Should show invite button (exact match to avoid matching "Invite Link" etc.)
+      await expect(page.getByRole('button', { name: 'Invite', exact: true })).toBeVisible();
     });
 
     test('should open invite modal', async ({ page }) => {
@@ -197,19 +206,21 @@ test.describe('Teams Feature', () => {
       await page.goto('/teams');
 
       // Create a team
-      await page.click('button:has-text("Create Team")');
+      await page.locator('main button:has-text("Create Team")').click();
       const teamSlug = `modal-team-${Date.now()}`;
       await page.fill('input[name="name"]', 'Modal Team');
       await page.fill('input[name="slug"]', teamSlug);
-      await page.click('button[type="submit"]:has-text("Create Team")');
-      await page.waitForTimeout(500);
+      await page.locator('#create-team-modal button[type="submit"]').click();
+
+      // Wait for redirect to team page after creation
+      await page.waitForURL(new RegExp(`/teams/${teamSlug}`));
 
       // Navigate to members page and click invite
       await page.goto(`/teams/${teamSlug}/members`);
-      await page.click('button:has-text("Invite")');
+      await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
       // Should show invite modal
-      await expect(page.locator('text=Invite')).toBeVisible();
+      await expect(page.locator('#invite-modal-title')).toBeVisible();
     });
   });
 });

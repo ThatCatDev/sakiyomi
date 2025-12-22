@@ -17,7 +17,7 @@ test.describe('Profile Page', () => {
 
   test('should redirect to login when not authenticated', async ({ page }) => {
     await page.goto('/profile');
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL(/\/login(\?redirect=.*)?/);
   });
 
   test('should display profile page after signup and navigation', async ({ page }) => {
@@ -29,10 +29,10 @@ test.describe('Profile Page', () => {
     await expect(page).toHaveURL('/profile');
 
     // Check profile page content
-    await expect(page.locator('h1').first()).toContainText('Profile');
-    await expect(page.locator(`text=${testEmail}`).first()).toBeVisible();
-    await expect(page.locator('text=Account Created')).toBeVisible();
-    await expect(page.locator('text=Sign Out')).toBeVisible();
+    await expect(page.locator('main h1').first()).toContainText('Profile');
+    await expect(page.locator(`main:has-text("${testEmail}")`)).toBeVisible();
+    await expect(page.locator('main:has-text("Account Created")')).toBeVisible();
+    await expect(page.locator('main button:has-text("Sign Out")')).toBeVisible();
   });
 
   test('should sign out from profile page', async ({ page }) => {
@@ -42,14 +42,14 @@ test.describe('Profile Page', () => {
     await page.goto('/profile');
 
     // Sign out
-    await page.click('button:has-text("Sign Out")');
+    await page.locator('main button:has-text("Sign Out")').click();
 
     // Should redirect to login
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL(/\/login(\?redirect=.*)?/);
 
     // Verify logged out - trying to access profile should redirect
     await page.goto('/profile');
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL(/\/login(\?redirect=.*)?/);
   });
 
   test('should display user avatar with first letter', async ({ page }) => {

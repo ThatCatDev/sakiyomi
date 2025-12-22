@@ -10,7 +10,7 @@ test.describe('Authentication', () => {
 
   test('should redirect unauthenticated users from profile to login', async ({ page }) => {
     await page.goto('/profile');
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL(/\/login(\?redirect=.*)?/);
   });
 
   test('should display login page correctly', async ({ page }) => {

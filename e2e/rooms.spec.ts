@@ -8,7 +8,8 @@ async function createRoom(page: import('@playwright/test').Page, name: string, i
   await page.fill('#room-name', name);
 
   if (isPermanent) {
-    await page.check('#is-permanent');
+    // Click the label for the styled checkbox since the input is sr-only
+    await page.locator('label[for="is-permanent"]').click();
   }
 
   await page.click('#create-modal button[type="submit"]');

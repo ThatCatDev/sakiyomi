@@ -112,11 +112,11 @@ test.describe('Full Signup Flow', () => {
     await page.click('#user-menu-button');
     await page.click('#user-dropdown a[href="/profile"]');
     await expect(page).toHaveURL('/profile');
-    await expect(page.locator(`text=${email}`)).toBeVisible();
+    await expect(page.locator(`main:has-text("${email}")`)).toBeVisible();
 
     // Sign out from profile
-    await page.click('button:has-text("Sign out")');
-    await expect(page).toHaveURL('/login');
+    await page.locator('main button:has-text("Sign Out")').click();
+    await expect(page).toHaveURL(/\/login(\?redirect=.*)?/);
 
     // Login again
     await page.fill('input[name="email"]', email);

@@ -68,8 +68,8 @@ test.describe('Manager Controls', () => {
     await expect(page2.locator('#manager-controls')).not.toBeVisible();
 
     // Second user should not have manager badge in their "You" section
-    const youSection = page2.locator('[data-participants-sidebar]').first();
-    await expect(youSection.locator('text=Manager')).not.toBeVisible();
+    // The "You" section is the first child with "You" label, specifically checking the bg-brand-light badge
+    await expect(page2.locator('[data-participants-sidebar] .bg-brand-light:has-text("Manager")')).not.toBeVisible();
 
     await context2.close();
   });
@@ -488,7 +488,7 @@ test.describe('Manager Controls', () => {
     await page.waitForTimeout(500);
 
     // Manager clicks promote button for Team Member
-    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Team Member' });
+    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Team Member' }).first();
     await expect(participantItem).toBeVisible();
     const promoteBtn = participantItem.locator('.promote-btn');
     await expect(promoteBtn).toBeVisible();
@@ -530,7 +530,7 @@ test.describe('Manager Controls', () => {
     await page.waitForTimeout(500);
 
     // First promote the second user
-    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Second Manager' });
+    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Second Manager' }).first();
     await participantItem.locator('.promote-btn').click();
 
     // Wait for promotion to complete
@@ -575,7 +575,7 @@ test.describe('Manager Controls', () => {
     await page.waitForTimeout(500);
 
     // First promote the second user so there are two managers
-    const teamMemberItem = page.locator('#participants-list li').filter({ hasText: 'Team Member' });
+    const teamMemberItem = page.locator('#participants-list li').filter({ hasText: 'Team Member' }).first();
     await teamMemberItem.locator('.promote-btn').click();
     await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
 
@@ -663,7 +663,7 @@ test.describe('Manager Controls', () => {
     await expect(page2.locator('.promote-btn')).not.toBeVisible();
 
     // Promote second user
-    const newManagerItem = page.locator('#participants-list li').filter({ hasText: 'New Manager' });
+    const newManagerItem = page.locator('#participants-list li').filter({ hasText: 'New Manager' }).first();
     await newManagerItem.locator('.promote-btn').click();
 
     // Wait for promotion
@@ -671,11 +671,11 @@ test.describe('Manager Controls', () => {
 
     // Now second user should see promote buttons for third user
     await page2.waitForTimeout(500);
-    const teamMemberItemPage2 = page2.locator('#participants-list li').filter({ hasText: 'Team Member' });
+    const teamMemberItemPage2 = page2.locator('#participants-list li').filter({ hasText: 'Team Member' }).first();
     await expect(teamMemberItemPage2.locator('.promote-btn')).toBeVisible({ timeout: 5000 });
 
     // And demote button for the original manager
-    const originalManagerItemPage2 = page2.locator('#participants-list li').filter({ hasText: 'Original Manager' });
+    const originalManagerItemPage2 = page2.locator('#participants-list li').filter({ hasText: 'Original Manager' }).first();
     await expect(originalManagerItemPage2.locator('.demote-btn')).toBeVisible({ timeout: 5000 });
 
     await context2.close();
@@ -706,7 +706,7 @@ test.describe('Manager Controls', () => {
     await page.waitForTimeout(500);
 
     // Manager clicks kick button
-    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Kicked User' });
+    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Kicked User' }).first();
     await expect(participantItem).toBeVisible();
 
     const kickBtn = participantItem.locator('.kick-btn');
@@ -784,7 +784,7 @@ test.describe('Manager Controls', () => {
     });
 
     // Manager clicks kick button
-    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Kicked User' });
+    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Kicked User' }).first();
     await participantItem.locator('.kick-btn').click();
 
     // Confirm kick in modal
