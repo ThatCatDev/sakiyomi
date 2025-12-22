@@ -1,12 +1,44 @@
 import { defineMiddleware } from 'astro:middleware';
-import { createSupabaseServerClientFromRequest } from './lib/supabase';
+import { createServerClient, parseCookieHeader } from '@supabase/ssr';
 
 const protectedRoutes = ['/profile', '/teams'];
 const protectedPrefixes = ['/teams/'];
 const authRoutes = ['/login', '/signup'];
 
-export const onRequest = defineMiddleware(async ({ url, redirect, request }, next) => {
-  const supabase = createSupabaseServerClientFromRequest(request);
+export const onRequest = defineMiddleware(async ({ url, redirect, request, cookies }, next) => {
+  // Create a response-aware supabase client for cookie handling
+  const responseCookies: { name: string; value: string; options?: any }[] = [];
+
+  const supabase = createServerClient(
+    import.meta.env.PUBLIC_SUPABASE_URL,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return parseCookieHeader(request.headers.get('Cookie') ?? '');
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(cookie => {
+            responseCookies.push(cookie);
+            cookies.set(cookie.name, cookie.value, cookie.options);
+          });
+        },
+      },
+    }
+  );
+
+  // Handle PKCE code exchange from Supabase auth callback
+  const code = url.searchParams.get('code');
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      // Remove code from URL and redirect
+      const cleanUrl = new URL(url);
+      cleanUrl.searchParams.delete('code');
+      return redirect(cleanUrl.pathname || '/');
+    }
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
 
   const isProtectedRoute = protectedRoutes.some(route => url.pathname === route) ||

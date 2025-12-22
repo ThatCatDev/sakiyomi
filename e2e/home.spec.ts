@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { signUpAndVerify } from './helpers/auth';
 
 test.describe('Home Page', () => {
   test.describe('Unauthenticated', () => {
@@ -48,18 +49,11 @@ test.describe('Home Page', () => {
   });
 
   test.describe('Authenticated', () => {
-    const testPassword = 'TestPassword123!';
-
     test('should show user menu when logged in', async ({ page }) => {
-      const email = `testhome${Date.now()}@test.com`;
+      await signUpAndVerify(page, 'testhome');
 
-      // Sign up
-      await page.goto('/signup');
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', testPassword);
-      await page.fill('input[name="confirm-password"]', testPassword);
-      await page.click('button[type="submit"]');
-      await page.waitForURL('/');
+      // Navigate to home to check authenticated state
+      await page.goto('/');
 
       // Check authenticated home page has user menu
       await expect(page.locator('#user-menu-button')).toBeVisible();
@@ -69,15 +63,10 @@ test.describe('Home Page', () => {
     });
 
     test('should show user menu dropdown when logged in', async ({ page }) => {
-      const email = `testnav${Date.now()}@test.com`;
+      await signUpAndVerify(page, 'testnav');
 
-      // Sign up
-      await page.goto('/signup');
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', testPassword);
-      await page.fill('input[name="confirm-password"]', testPassword);
-      await page.click('button[type="submit"]');
-      await page.waitForURL('/');
+      // Navigate to home to check authenticated state
+      await page.goto('/');
 
       // Should see user menu button
       const menuButton = page.locator('#user-menu-button');
@@ -89,15 +78,10 @@ test.describe('Home Page', () => {
     });
 
     test('should open dropdown and navigate to profile', async ({ page }) => {
-      const email = `testdropdown${Date.now()}@test.com`;
+      await signUpAndVerify(page, 'testdropdown');
 
-      // Sign up
-      await page.goto('/signup');
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', testPassword);
-      await page.fill('input[name="confirm-password"]', testPassword);
-      await page.click('button[type="submit"]');
-      await page.waitForURL('/');
+      // Navigate to home
+      await page.goto('/');
 
       // Click user menu button to open dropdown
       await page.click('#user-menu-button');
@@ -112,15 +96,10 @@ test.describe('Home Page', () => {
     });
 
     test('should sign out from dropdown menu', async ({ page }) => {
-      const email = `testsignout${Date.now()}@test.com`;
+      await signUpAndVerify(page, 'testsignout');
 
-      // Sign up
-      await page.goto('/signup');
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', testPassword);
-      await page.fill('input[name="confirm-password"]', testPassword);
-      await page.click('button[type="submit"]');
-      await page.waitForURL('/');
+      // Navigate to home
+      await page.goto('/');
 
       // Click user menu button to open dropdown
       await page.click('#user-menu-button');
@@ -133,15 +112,10 @@ test.describe('Home Page', () => {
     });
 
     test('should close dropdown when clicking outside', async ({ page }) => {
-      const email = `testclose${Date.now()}@test.com`;
+      await signUpAndVerify(page, 'testclose');
 
-      // Sign up
-      await page.goto('/signup');
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', testPassword);
-      await page.fill('input[name="confirm-password"]', testPassword);
-      await page.click('button[type="submit"]');
-      await page.waitForURL('/');
+      // Navigate to home
+      await page.goto('/');
 
       // Open dropdown
       await page.click('#user-menu-button');

@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  # Use dev/test Supabase instance for e2e tests
-  PUBLIC_SUPABASE_URL: ${{ secrets.DEV_SUPABASE_URL }}
-  PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEV_SUPABASE_ANON_KEY }}
-
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
@@ -18,23 +13,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2, 3, 4, 5, 6]
         include:
           - shard: 1
-            name: "Auth & Signup"
-            tests: "e2e/auth.spec.ts e2e/signup-flow.spec.ts"
+            name: "Auth & Email Verification"
+            tests: "e2e/auth.spec.ts e2e/email-verification.spec.ts"
           - shard: 2
-            name: "Home & Profile"
-            tests: "e2e/home.spec.ts e2e/profile.spec.ts"
+            name: "Signup & Home"
+            tests: "e2e/signup-flow.spec.ts e2e/home.spec.ts"
           - shard: 3
+            name: "Profile & Password"
+            tests: "e2e/profile.spec.ts e2e/password-recovery.spec.ts"
+          - shard: 4
             name: "Rooms & Participants"
             tests: "e2e/rooms.spec.ts e2e/participants.spec.ts"
-          - shard: 4
+          - shard: 5
             name: "Voting & Manager"
             tests: "e2e/voting.spec.ts e2e/manager.spec.ts"
-          - shard: 5
-            name: "Password & Teams"
-            tests: "e2e/password-recovery.spec.ts e2e/teams.spec.ts"
+          - shard: 6
+            name: "Teams"
+            tests: "e2e/teams.spec.ts"
 
     name: E2E - ${{ matrix.name }}
 
@@ -52,6 +50,19 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Create .env.local for local Supabase
+        run: |
+          echo "PUBLIC_SUPABASE_URL=http://localhost:54321" >> .env.local
+          echo "PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" >> .env.local
+
       - name: Run E2E tests
         run: bunx playwright test ${{ matrix.tests }}
 
@@ -62,6 +73,10 @@ jobs:
           name: playwright-report-shard-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
 
   e2e-summary:
     needs: e2e-tests

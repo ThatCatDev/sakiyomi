@@ -1,18 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { signUpAndVerify } from './helpers/auth';
 
 test.describe('Teams Feature', () => {
-  const testPassword = 'TestPassword123!';
-
-  // Helper to create a unique user and sign up
+  // Helper to create a verified user
   async function signUpUser(page: any, emailPrefix: string) {
-    const email = `${emailPrefix}${Date.now()}@test.com`;
-    await page.goto('/signup');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', testPassword);
-    await page.fill('input[name="confirm-password"]', testPassword);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/');
-    return email;
+    return signUpAndVerify(page, emailPrefix);
   }
 
   test.describe('Teams Page Access', () => {

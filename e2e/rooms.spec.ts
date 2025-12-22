@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { signUpAndVerify } from './helpers/auth';
 
 // Helper to create a room via the modal
 async function createRoom(page: import('@playwright/test').Page, name: string, isPermanent = false) {
@@ -128,18 +129,9 @@ test.describe('Rooms', () => {
 });
 
 test.describe('Auto-Join for Signed-In Users', () => {
-  const testPassword = 'TestPassword123!';
-
-  // Helper to create a unique user and sign up
+  // Helper to create a verified user
   async function signUpUser(page: import('@playwright/test').Page, emailPrefix: string) {
-    const email = `${emailPrefix}${Date.now()}@test.com`;
-    await page.goto('/signup');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', testPassword);
-    await page.fill('input[name="confirm-password"]', testPassword);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/');
-    return email;
+    return signUpAndVerify(page, emailPrefix);
   }
 
   test('signed-in user should be auto-joined to room without name prompt', async ({ page, browser }) => {
