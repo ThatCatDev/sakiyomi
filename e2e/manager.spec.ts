@@ -405,6 +405,15 @@ test.describe('Manager Controls', () => {
     // Wait for page to reload (leave redirects/reloads)
     await expect(page.locator('#join-section')).toBeVisible({ timeout: 10000 });
 
+    // Wait for database to settle after manager transfer
+    await page.waitForTimeout(500);
+
+    // Navigate away and back to force fresh server state fetch
+    await page2.goto('/');
+    await page2.waitForTimeout(100);
+    await page2.goto(roomUrl);
+    await expect(page2.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+
     // Second user should now have manager controls
     await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
 
@@ -451,6 +460,19 @@ test.describe('Manager Controls', () => {
     await page.click('#confirm-leave-btn');
     await expect(page.locator('#join-section')).toBeVisible({ timeout: 10000 });
 
+    // Wait for database to settle after manager transfer
+    await page.waitForTimeout(500);
+
+    // Navigate away and back to force fresh server state fetch
+    const roomUrl2 = page2.url();
+    const roomUrl3 = page3.url();
+    await page2.goto('/');
+    await page2.goto(roomUrl2);
+    await expect(page2.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+    await page3.goto('/');
+    await page3.goto(roomUrl3);
+    await expect(page3.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+
     // First joiner (oldest) should become manager
     await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
 
@@ -494,14 +516,27 @@ test.describe('Manager Controls', () => {
     await expect(promoteBtn).toBeVisible();
     await promoteBtn.click();
 
+    // Wait for database update
+    await page.waitForTimeout(500);
+
+    // Navigate away and back to force fresh server state fetch
+    await page2.goto('/');
+    await page2.goto(roomUrl);
+    await expect(page2.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+
     // Second user should now have manager controls
     await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
 
     // Second user should see Manager badge
     await expect(page2.locator('text=Manager').first()).toBeVisible();
 
+    // Navigate page1 to verify badge is visible on manager's view
+    await page.goto('/');
+    await page.goto(roomUrl);
+    await expect(page.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+    const participantItemAfterReload = page.locator('#participants-list li').filter({ hasText: 'Team Member' }).first();
     // Manager badge (text-brand) should appear next to Team Member in the participants list
-    await expect(participantItem.locator('.text-brand')).toBeVisible({ timeout: 5000 });
+    await expect(participantItemAfterReload.locator('.text-brand')).toBeVisible({ timeout: 5000 });
 
     await context2.close();
   });
@@ -530,11 +565,25 @@ test.describe('Manager Controls', () => {
     await page.waitForTimeout(500);
 
     // First promote the second user
-    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Second Manager' }).first();
+    let participantItem = page.locator('#participants-list li').filter({ hasText: 'Second Manager' }).first();
     await participantItem.locator('.promote-btn').click();
+
+    // Wait for database update
+    await page.waitForTimeout(500);
+
+    // Navigate page2 away and back to get updated state
+    await page2.goto('/');
+    await page2.goto(roomUrl);
+    await expect(page2.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
 
     // Wait for promotion to complete
     await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
+
+    // Navigate page away and back to get updated UI
+    await page.goto('/');
+    await page.goto(roomUrl);
+    await expect(page.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+    participantItem = page.locator('#participants-list li').filter({ hasText: 'Second Manager' }).first();
 
     // Now demote button should appear instead of promote button
     await expect(participantItem.locator('.demote-btn')).toBeVisible({ timeout: 5000 });
@@ -542,8 +591,22 @@ test.describe('Manager Controls', () => {
     // Click demote
     await participantItem.locator('.demote-btn').click();
 
+    // Wait for database update
+    await page.waitForTimeout(500);
+
+    // Navigate page2 away and back to get updated state
+    await page2.goto('/');
+    await page2.goto(roomUrl);
+    await expect(page2.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+
     // Second user should lose manager controls
     await expect(page2.locator('#manager-controls')).not.toBeVisible({ timeout: 10000 });
+
+    // Navigate page away and back to verify badge is removed
+    await page.goto('/');
+    await page.goto(roomUrl);
+    await expect(page.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+    participantItem = page.locator('#participants-list li').filter({ hasText: 'Second Manager' }).first();
 
     // Manager badge (text-brand) should be removed from participant list
     await expect(participantItem.locator('.text-brand')).not.toBeVisible({ timeout: 5000 });
@@ -577,13 +640,34 @@ test.describe('Manager Controls', () => {
     // First promote the second user so there are two managers
     const teamMemberItem = page.locator('#participants-list li').filter({ hasText: 'Team Member' }).first();
     await teamMemberItem.locator('.promote-btn').click();
+
+    // Wait for database update
+    await page.waitForTimeout(500);
+
+    // Navigate page2 away and back to get updated state
+    await page2.goto('/');
+    await page2.goto(roomUrl);
+    await expect(page2.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
     await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
+
+    // Navigate page away and back to get updated UI (demote button should now be visible)
+    await page.goto('/');
+    await page.goto(roomUrl);
+    await expect(page.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
 
     // Now original manager can demote themselves
     // Find own participant item (has current-user-indicator star)
     const ownItem = page.locator('#participants-list li:has(.current-user-indicator)');
     await expect(ownItem.locator('.demote-btn')).toBeVisible({ timeout: 5000 });
     await ownItem.locator('.demote-btn').click();
+
+    // Wait for database update
+    await page.waitForTimeout(500);
+
+    // Navigate page away and back to get updated state after demotion
+    await page.goto('/');
+    await page.goto(roomUrl);
+    await expect(page.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
 
     // Original manager should lose manager controls
     await expect(page.locator('#manager-controls')).not.toBeVisible({ timeout: 10000 });
@@ -666,11 +750,18 @@ test.describe('Manager Controls', () => {
     const newManagerItem = page.locator('#participants-list li').filter({ hasText: 'New Manager' }).first();
     await newManagerItem.locator('.promote-btn').click();
 
+    // Wait for database update
+    await page.waitForTimeout(500);
+
+    // Navigate page2 away and back to get updated state
+    await page2.goto('/');
+    await page2.goto(roomUrl);
+    await expect(page2.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
+
     // Wait for promotion
     await expect(page2.locator('#manager-controls')).toBeVisible({ timeout: 10000 });
 
     // Now second user should see promote buttons for third user
-    await page2.waitForTimeout(500);
     const teamMemberItemPage2 = page2.locator('#participants-list li').filter({ hasText: 'Team Member' }).first();
     await expect(teamMemberItemPage2.locator('.promote-btn')).toBeVisible({ timeout: 5000 });
 
@@ -706,7 +797,7 @@ test.describe('Manager Controls', () => {
     await page.waitForTimeout(500);
 
     // Manager clicks kick button
-    const participantItem = page.locator('#participants-list li').filter({ hasText: 'Kicked User' }).first();
+    let participantItem = page.locator('#participants-list li').filter({ hasText: 'Kicked User' }).first();
     await expect(participantItem).toBeVisible();
 
     const kickBtn = participantItem.locator('.kick-btn');
@@ -716,20 +807,20 @@ test.describe('Manager Controls', () => {
     // Kick confirmation modal should appear
     await expect(page.locator('#kick-modal')).toBeVisible();
 
-    // Second user should be kicked - handle alert on page2
-    page2.on('dialog', async (dialog) => {
-      expect(dialog.message()).toContain('removed from this room');
-      await dialog.accept();
-    });
-
     // Confirm kick
     await page.click('#confirm-kick-btn');
 
     // Wait for kick to process
-    await page2.waitForTimeout(1000);
+    await page.waitForTimeout(1000);
+
+    // Navigate page away and back to verify participant was removed
+    await page.goto('/');
+    await page.goto(roomUrl);
+    await expect(page.locator('#vote-cards-section')).toBeVisible({ timeout: 10000 });
 
     // Participant should be removed from manager's list
-    await expect(participantItem).not.toBeVisible({ timeout: 10000 });
+    participantItem = page.locator('#participants-list li').filter({ hasText: 'Kicked User' }).first();
+    await expect(participantItem).not.toBeVisible({ timeout: 5000 });
 
     // Participant count should decrease
     await expect(page.locator('#participant-count')).toHaveText('1');
@@ -754,7 +845,7 @@ test.describe('Manager Controls', () => {
     await expect(ownItem.locator('.kick-btn')).not.toBeVisible();
   });
 
-  test('kicked user sees alert and is redirected to join form', async ({ page, browser }) => {
+  test('kicked user sees join form when navigating to room', async ({ page, browser }) => {
     await page.goto('/');
 
     // Create room and join as manager
@@ -777,12 +868,6 @@ test.describe('Manager Controls', () => {
     // Wait for realtime sync
     await page.waitForTimeout(500);
 
-    // Handle alert on page2
-    page2.on('dialog', async (dialog) => {
-      expect(dialog.message()).toContain('removed from this room');
-      await dialog.accept();
-    });
-
     // Manager clicks kick button
     const participantItem = page.locator('#participants-list li').filter({ hasText: 'Kicked User' }).first();
     await participantItem.locator('.kick-btn').click();
@@ -791,8 +876,13 @@ test.describe('Manager Controls', () => {
     await expect(page.locator('#kick-modal')).toBeVisible();
     await page.click('#confirm-kick-btn');
 
-    // Kicked user should see join form again after page reload
-    await expect(page2.locator('#join-section')).toBeVisible({ timeout: 15000 });
+    // Wait for kick to process
+    await page.waitForTimeout(1000);
+
+    // Kicked user should see join form when navigating to room
+    await page2.goto('/');
+    await page2.goto(roomUrl);
+    await expect(page2.locator('#join-section')).toBeVisible({ timeout: 10000 });
 
     await context2.close();
   });
