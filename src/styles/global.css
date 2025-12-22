@@ -1,45 +1,80 @@
 @import "tailwindcss";
 
 @theme {
-  /* Light theme colors (default) */
-  --color-surface-primary: #ffffff;
-  --color-surface-secondary: #f1f5f9;
-  --color-surface-tertiary: #e2e8f0;
-  --color-surface-card: #ffffff;
-  --color-surface-hover: #e2e8f0;
-  --color-border-default: #cbd5e1;
-  --color-border-light: #e2e8f0;
-  --color-content-primary: #0f172a;
+  /* Light theme colors (default) - Primary: #0796FD */
+
+  /* Surfaces */
+  --color-surface-primary: #F8FAFC;   /* main app background */
+  --color-surface-secondary: #F1F5F9; /* subtle panels */
+  --color-surface-tertiary: #E2E8F0;  /* deeper sections */
+  --color-surface-card: #FFFFFF;      /* cards, modals */
+  --color-surface-hover: #E2E8F0;
+
+  /* Borders */
+  --color-border-default: #E2E8F0;
+  --color-border-light: #CBD5E1;
+  --color-focus-ring: rgba(7, 150, 253, 0.35);
+
+  /* Text */
+  --color-content-primary: #0F172A;
   --color-content-secondary: #475569;
-  --color-content-muted: #64748b;
-  --color-brand: #6366f1;
-  --color-brand-hover: #4f46e5;
-  --color-brand-light: #e0e7ff;
-  --color-success: #16a34a;
+  --color-content-muted: #64748B;
+
+  /* Brand - derived from #0796FD */
+  --color-brand: #0796FD;
+  --color-brand-hover: #0284E8;
+  --color-brand-active: #026FCA;
+  --color-brand-light: #E6F3FF;
+
+  /* Status */
+  --color-success: #16A34A;
   --color-success-light: #dcfce7;
-  --color-toggle-track: #cbd5e1;
-  --color-toggle-knob: #ffffff;
+  --color-warning: #F59E0B;
+  --color-warning-light: #FEF3C7;
+  --color-error: #EF4444;
+  --color-error-light: #FEE2E2;
+
+  /* Toggle */
+  --color-toggle-track: #CBD5E1;
+  --color-toggle-knob: #FFFFFF;
 }
 
-/* Dark theme overrides */
+/* Dark theme overrides - Primary: #0796FD (blue, not purple) */
 .dark {
-  --color-surface-primary: #0f172a;
-  --color-surface-secondary: #1e293b;
-  --color-surface-tertiary: #334155;
-  --color-surface-card: #1e293b;
-  --color-surface-hover: #334155;
-  --color-border-default: #334155;
-  --color-border-light: #1e293b;
-  --color-content-primary: #f8fafc;
-  --color-content-secondary: #cbd5e1;
-  --color-content-muted: #64748b;
-  --color-brand: #818cf8;
-  --color-brand-hover: #6366f1;
-  --color-brand-light: rgba(99, 102, 241, 0.15);
-  --color-success: #4ade80;
+  /* Surfaces - blue-leaning, softer contrast */
+  --color-surface-primary: #0F1620;   /* main background */
+  --color-surface-secondary: #131C28; /* subtle sections */
+  --color-surface-tertiary: #182230;  /* deeper sections */
+  --color-surface-card: #151E2C;      /* cards */
+  --color-surface-hover: #1A2536;
+
+  /* Borders - subtle blue-gray */
+  --color-border-default: #1E2A38;
+  --color-border-light: #263344;
+  --color-focus-ring: rgba(7, 150, 253, 0.45);
+
+  /* Text */
+  --color-content-primary: #E5E7EB;
+  --color-content-secondary: #A1A1AA;
+  --color-content-muted: #71717A;
+
+  /* Brand - softer for dark mode */
+  --color-brand: #3B9EE8;
+  --color-brand-hover: #5BB0F0;
+  --color-brand-active: #7AC2F8;
+  --color-brand-light: rgba(59, 158, 232, 0.15);
+
+  /* Status */
+  --color-success: #22C55E;
   --color-success-light: rgba(34, 197, 94, 0.15);
-  --color-toggle-track: #475569;
-  --color-toggle-knob: #ffffff;
+  --color-warning: #FBBF24;
+  --color-warning-light: rgba(251, 191, 36, 0.15);
+  --color-error: #F87171;
+  --color-error-light: rgba(248, 113, 113, 0.15);
+
+  /* Toggle */
+  --color-toggle-track: #2B3A5F;
+  --color-toggle-knob: #FFFFFF;
 }
 
 /* Apply theme colors to body */
@@ -149,7 +184,7 @@ body {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, var(--color-brand) 0%, #a855f7 100%);
+  background: linear-gradient(135deg, var(--color-brand) 0%, #5ABEFF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -162,9 +197,9 @@ body {
 
 .feature-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px -12px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 12px 40px -12px rgba(7, 150, 253, 0.25);
 }
 
 .dark .feature-card:hover {
-  box-shadow: 0 12px 40px -12px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 12px 40px -12px rgba(7, 150, 253, 0.15);
 }

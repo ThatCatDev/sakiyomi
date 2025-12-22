@@ -23,7 +23,7 @@ const {
   centered = false,
 } = Astro.props;
 
-const baseClasses = 'w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent';
+const baseClasses = 'w-full px-4 py-3 bg-surface-secondary border border-border-default rounded-xl text-content-primary placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent';
 const centeredClass = centered ? 'text-center' : '';
 const classes = `${baseClasses} ${centeredClass} ${className}`;
 ---

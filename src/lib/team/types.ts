@@ -134,7 +134,7 @@ export function getRoleLabel(role: TeamRole): string {
  */
 export function getRoleColor(role: TeamRole): string {
   const colors: Record<TeamRole, string> = {
-    owner: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    owner: 'bg-warning/10 text-warning',
     admin: 'bg-brand-light text-brand',
     member: 'bg-surface-tertiary text-content-muted',
   };

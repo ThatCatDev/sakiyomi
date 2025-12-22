@@ -795,7 +795,7 @@ export class RoomController {
           loading="lazy"
         />
         ${isCurrentUser ? `
-          <div class="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full border-2 border-surface-primary flex items-center justify-center current-user-indicator">
+          <div class="absolute -top-1 -left-1 w-4 h-4 bg-warning rounded-full border-2 border-surface-primary flex items-center justify-center current-user-indicator">
             <svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
@@ -825,7 +825,7 @@ export class RoomController {
           </button>
         ` : ''}
         ${canDemote ? `
-          <button class="demote-btn p-1 text-content-muted hover:text-red-400 transition-colors" title="${isCurrentUser ? 'Step down as manager' : 'Remove manager'}" data-participant-id="${participant.id}">
+          <button class="demote-btn p-1 text-content-muted hover:text-error transition-colors" title="${isCurrentUser ? 'Step down as manager' : 'Remove manager'}" data-participant-id="${participant.id}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
@@ -834,7 +834,7 @@ export class RoomController {
       </div>
       <div class="w-6 flex items-center justify-center flex-shrink-0 kick-slot">
         ${canKick ? `
-          <button class="kick-btn p-1 text-content-muted hover:text-red-400 transition-colors" title="Remove from room" data-participant-id="${participant.id}">
+          <button class="kick-btn p-1 text-content-muted hover:text-error transition-colors" title="Remove from room" data-participant-id="${participant.id}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -1250,7 +1250,7 @@ export class RoomController {
       >
         ${option}
         ${isManager ? `
-          <button type="button" class="remove-option-btn text-content-muted hover:text-red-400 transition-colors">
+          <button type="button" class="remove-option-btn text-content-muted hover:text-error transition-colors">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -1428,7 +1428,7 @@ export class RoomController {
     if (role === 'manager') {
       // Add demote button for managers
       const demoteBtn = document.createElement('button');
-      demoteBtn.className = 'demote-btn p-1 text-content-muted hover:text-red-400 transition-colors';
+      demoteBtn.className = 'demote-btn p-1 text-content-muted hover:text-error transition-colors';
       demoteBtn.title = isCurrentUser ? 'Step down as manager' : 'Remove manager';
       demoteBtn.dataset.participantId = participantId || '';
       demoteBtn.innerHTML = `
@@ -1464,7 +1464,7 @@ export class RoomController {
     // Add kick button for all other participants (not self)
     if (!isCurrentUser) {
       const kickBtn = document.createElement('button');
-      kickBtn.className = 'kick-btn p-1 text-content-muted hover:text-red-400 transition-colors';
+      kickBtn.className = 'kick-btn p-1 text-content-muted hover:text-error transition-colors';
       kickBtn.title = 'Remove from room';
       kickBtn.dataset.participantId = participantId || '';
       kickBtn.innerHTML = `

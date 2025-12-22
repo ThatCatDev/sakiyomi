@@ -68,7 +68,7 @@ test.describe('Manager Controls', () => {
     await expect(page2.locator('#manager-controls')).not.toBeVisible();
 
     // Second user should not have manager badge in their "You" section
-    const youSection = page2.locator('.border-b.border-slate-800').first();
+    const youSection = page2.locator('[data-participants-sidebar]').first();
     await expect(youSection.locator('text=Manager')).not.toBeVisible();
 
     await context2.close();
@@ -156,7 +156,7 @@ test.describe('Manager Controls', () => {
     await expect(page.locator('#your-vote-display')).toHaveText('5');
 
     // Vote card should be selected
-    await expect(page.locator('.vote-card[data-vote="5"]')).toHaveClass(/border-indigo-500/);
+    await expect(page.locator('.vote-card[data-vote="5"]')).toHaveClass(/border-brand/);
   });
 
   test('manager can reveal votes', async ({ page }) => {
@@ -500,8 +500,8 @@ test.describe('Manager Controls', () => {
     // Second user should see Manager badge
     await expect(page2.locator('text=Manager').first()).toBeVisible();
 
-    // Manager badge (text-indigo-400) should appear next to Team Member in the participants list
-    await expect(participantItem.locator('.text-indigo-400')).toBeVisible({ timeout: 5000 });
+    // Manager badge (text-brand) should appear next to Team Member in the participants list
+    await expect(participantItem.locator('.text-brand')).toBeVisible({ timeout: 5000 });
 
     await context2.close();
   });
@@ -545,8 +545,8 @@ test.describe('Manager Controls', () => {
     // Second user should lose manager controls
     await expect(page2.locator('#manager-controls')).not.toBeVisible({ timeout: 10000 });
 
-    // Manager badge (text-indigo-400) should be removed from participant list
-    await expect(participantItem.locator('.text-indigo-400')).not.toBeVisible({ timeout: 5000 });
+    // Manager badge (text-brand) should be removed from participant list
+    await expect(participantItem.locator('.text-brand')).not.toBeVisible({ timeout: 5000 });
 
     await context2.close();
   });
@@ -589,8 +589,8 @@ test.describe('Manager Controls', () => {
     await expect(page.locator('#manager-controls')).not.toBeVisible({ timeout: 10000 });
 
     // Manager badge should be removed from "You" section
-    const youSection = page.locator('.border-b.border-slate-800').first();
-    await expect(youSection.locator('.bg-indigo-600\\/30')).not.toBeVisible({ timeout: 5000 });
+    const youSection = page.locator('[data-participants-sidebar]').first();
+    await expect(youSection.locator('.bg-brand-light')).not.toBeVisible({ timeout: 5000 });
 
     await context2.close();
   });

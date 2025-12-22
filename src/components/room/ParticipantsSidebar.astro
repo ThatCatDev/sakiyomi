@@ -42,7 +42,7 @@ const currentAvatarUrl = getAvatarUrl(currentAvatarStyle, currentAvatarSeed, 40)
           </button>
           <button
             id="leave-room-btn"
-            class="p-1 text-content-muted hover:text-red-400 transition-colors"
+            class="p-1 text-content-muted hover:text-error transition-colors"
             title="Leave room"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,7 +92,7 @@ const currentAvatarUrl = getAvatarUrl(currentAvatarStyle, currentAvatarSeed, 40)
             Cancel
           </button>
         </div>
-        <p id="edit-error" class="text-red-400 text-xs hidden"></p>
+        <p id="edit-error" class="text-error text-xs hidden"></p>
       </form>
     </div>
   )}
