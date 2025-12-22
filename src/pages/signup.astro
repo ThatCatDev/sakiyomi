@@ -15,12 +15,25 @@ const appName = getAppName(Astro.url.hostname);
 ---
 
 <Layout title={`Sign Up - ${appName}`}>
-  <main class="min-h-screen flex items-center justify-center p-4">
+  <main class="min-h-screen flex flex-col p-4">
+    <!-- Back link -->
+    <div class="max-w-md mx-auto w-full pt-4">
+      <a href="/" class="inline-flex items-center gap-2 text-content-secondary hover:text-content-primary transition-colors text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to home
+      </a>
+    </div>
+
+    <div class="flex-1 flex items-center justify-center">
     <div class="w-full max-w-md">
       <!-- Logo/Brand -->
       <div class="text-center mb-8">
-        <img src="/logo.svg" alt={appName} class="w-16 h-16 mx-auto mb-4" />
-        <h1 class="text-2xl font-bold text-content-primary">{appName}</h1>
+        <a href="/" class="inline-block">
+          <img src="/logo.svg" alt={appName} class="w-16 h-16 mx-auto mb-4" />
+          <h1 class="text-2xl font-bold text-content-primary">{appName}</h1>
+        </a>
         <p class="text-content-muted mt-2">Create your account</p>
       </div>
 
@@ -90,6 +103,7 @@ const appName = getAppName(Astro.url.hostname);
           Sign in
         </a>
       </p>
+    </div>
     </div>
   </main>
 </Layout>

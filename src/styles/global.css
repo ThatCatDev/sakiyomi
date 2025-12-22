@@ -127,11 +127,6 @@ body {
   }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
 /* Modal backdrop */
 .modal-backdrop {
   animation: fade-in 0.15s ease-out;
@@ -177,11 +172,6 @@ body {
   transform: scale(0.97);
 }
 
-/* Hero illustration float animation */
-.float-animation {
-  animation: float 6s ease-in-out infinite;
-}
-
 /* Gradient text */
 .gradient-text {
   background: linear-gradient(135deg, var(--color-brand) 0%, #5ABEFF 100%);
@@ -190,16 +180,3 @@ body {
   background-clip: text;
 }
 
-/* Feature card hover */
-.feature-card {
-  transition: all 0.2s ease-out;
-}
-
-.feature-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px -12px rgba(7, 150, 253, 0.25);
-}
-
-.dark .feature-card:hover {
-  box-shadow: 0 12px 40px -12px rgba(7, 150, 253, 0.15);
-}

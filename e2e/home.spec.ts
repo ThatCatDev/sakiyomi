@@ -11,7 +11,7 @@ test.describe('Home Page', () => {
       // Hero section
       await expect(page.locator('text=Real-time Story Point')).toBeVisible();
       await expect(page.locator('span.gradient-text:has-text("Estimation")')).toBeVisible();
-      await expect(page.locator('text=collaborative sprint planning')).toBeVisible();
+      await expect(page.locator('text=Streamline your agile estimation')).toBeVisible();
 
       // CTAs - Create Room available for everyone
       await expect(page.locator('button:has-text("Create Room")')).toBeVisible();
@@ -19,16 +19,16 @@ test.describe('Home Page', () => {
 
       // Features section
       await expect(page.locator('text=How it works')).toBeVisible();
-      await expect(page.locator('text=Create a Room')).toBeVisible();
-      await expect(page.locator('text=Vote Together')).toBeVisible();
-      await expect(page.locator('text=Reveal & Discuss')).toBeVisible();
+      await expect(page.locator('h3:has-text("Create a Room")')).toBeVisible();
+      await expect(page.locator('h3:has-text("Vote Together")')).toBeVisible();
+      await expect(page.locator('h3:has-text("Reveal & Discuss")')).toBeVisible();
     });
 
     test('should show sign in and sign up links in navigation', async ({ page }) => {
       await page.goto('/');
 
       await expect(page.locator('nav a:has-text("Sign in")')).toBeVisible();
-      await expect(page.locator('nav a:has-text("Sign up")')).toBeVisible();
+      await expect(page.locator('nav a:has-text("Get Started")')).toBeVisible();
     });
 
     test('should create room from home page', async ({ page }) => {

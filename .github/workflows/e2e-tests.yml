@@ -1,0 +1,77 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+  PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+        include:
+          - shard: 1
+            name: "Auth & Signup"
+            tests: "e2e/auth.spec.ts e2e/signup-flow.spec.ts"
+          - shard: 2
+            name: "Home & Profile"
+            tests: "e2e/home.spec.ts e2e/profile.spec.ts"
+          - shard: 3
+            name: "Rooms & Participants"
+            tests: "e2e/rooms.spec.ts e2e/participants.spec.ts"
+          - shard: 4
+            name: "Voting & Manager"
+            tests: "e2e/voting.spec.ts e2e/manager.spec.ts"
+          - shard: 5
+            name: "Password & Teams"
+            tests: "e2e/password-recovery.spec.ts e2e/teams.spec.ts"
+
+    name: E2E - ${{ matrix.name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: bunx playwright test ${{ matrix.tests }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: playwright-report/
+          retention-days: 7
+
+  e2e-summary:
+    needs: e2e-tests
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check E2E test results
+        run: |
+          if [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+            echo "All E2E tests passed!"
+          else
+            echo "Some E2E tests failed"
+            exit 1
+          fi
