@@ -72,9 +72,9 @@ const { data: limits } = await supabase
 const teamLimits: TeamLimits = limits || {
   id: '',
   team_id: team.id,
-  max_members: 5,
+  max_members: 10,
   max_active_rooms: 3,
-  plan_name: 'free',
+  plan_name: 'default',
 };
 ---
 

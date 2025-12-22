@@ -1,14 +1,14 @@
-/* Custom styles for Storypoint Estimate docs */
+/* Custom styles for Sakiyomi docs */
 
-/* Accent color - indigo to match main site */
+/* Accent color - blue to match main site (#0796FD) */
 :root {
-  --sl-color-accent-low: #312e81;
-  --sl-color-accent: #6366f1;
-  --sl-color-accent-high: #a5b4fc;
+  --sl-color-accent-low: #026FCA;
+  --sl-color-accent: #0796FD;
+  --sl-color-accent-high: #5ABEFF;
 }
 
 :root[data-theme='dark'] {
-  --sl-color-accent-low: #312e81;
-  --sl-color-accent: #818cf8;
-  --sl-color-accent-high: #c7d2fe;
+  --sl-color-accent-low: #0284E8;
+  --sl-color-accent: #3B9EE8;
+  --sl-color-accent-high: #7AC2F8;
 }

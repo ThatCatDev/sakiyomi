@@ -1,11 +1,11 @@
 ---
 title: Introduction
-description: Learn about Storypoint Estimate - a free, real-time story point estimation tool for agile teams.
+description: Learn about Sakiyomi - an open-source, real-time story point estimation tool for agile teams.
 ---
 
-Storypoint Estimate is a **free, open-source** story point estimation tool designed for agile teams. It enables real-time collaboration during sprint planning sessions without requiring any signup.
+Sakiyomi is an **open-source** story point estimation tool designed for agile teams. It enables real-time collaboration during sprint planning sessions without requiring any signup.
 
-![Storypoint Estimate Homepage](../../../assets/screenshots/homepage.png)
+![Sakiyomi Homepage](../../../assets/screenshots/homepage.png)
 
 ## Key Features
 
@@ -15,9 +15,9 @@ Storypoint Estimate is a **free, open-source** story point estimation tool desig
 - **Custom vote options** - Use Fibonacci, T-shirt sizes, or custom values
 - **Privacy-first** - Votes are hidden until revealed
 
-## Why Storypoint Estimate?
+## Why Sakiyomi?
 
-Traditional estimation meetings can be slow and biased. When one person speaks first, they anchor the entire team's thinking. Storypoint Estimate solves this by:
+Traditional estimation meetings can be slow and biased. When one person speaks first, they anchor the entire team's thinking. Sakiyomi solves this by:
 
 1. **Anonymous voting** - Everyone votes independently
 2. **Simultaneous reveal** - All estimates shown at once
@@ -25,7 +25,7 @@ Traditional estimation meetings can be slow and biased. When one person speaks f
 
 ## Open Source
 
-Storypoint Estimate is open source under the MIT license. You can:
+Sakiyomi is open source under the MIT license. You can:
 
 - Self-host on your own infrastructure
 - Contribute improvements

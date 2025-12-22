@@ -13,17 +13,17 @@ const BRAND_CONFIG: Record<string, BrandConfig> = {
   'storypoint-estimate.com': {
     name: 'Storypoint Estimate',
     shortName: 'SP Estimate',
-    tagline: 'Free Online Story Point Estimation',
-    description: 'Free online story point estimation tool for agile teams. No signup required. Real-time team voting for sprint planning and collaboration.',
-    keywords: ['story points', 'story point estimation', 'agile estimation', 'sprint planning', 'scrum estimation', 'team estimation', 'agile team tools', 'online estimation tool', 'free estimation tool', 'agile voting', 'sprint estimation'],
+    tagline: 'Online Story Point Estimation',
+    description: 'Online story point estimation tool for agile teams. No signup required. Real-time team voting for sprint planning and collaboration.',
+    keywords: ['story points', 'story point estimation', 'agile estimation', 'sprint planning', 'scrum estimation', 'team estimation', 'agile team tools', 'online estimation tool', 'agile voting', 'sprint estimation'],
     docsUrl: 'https://docs.storypoint-estimate.com',
   },
   'www.storypoint-estimate.com': {
     name: 'Storypoint Estimate',
     shortName: 'SP Estimate',
-    tagline: 'Free Online Story Point Estimation',
-    description: 'Free online story point estimation tool for agile teams. No signup required. Real-time team voting for sprint planning and collaboration.',
-    keywords: ['story points', 'story point estimation', 'agile estimation', 'sprint planning', 'scrum estimation', 'team estimation', 'agile team tools', 'online estimation tool', 'free estimation tool', 'agile voting', 'sprint estimation'],
+    tagline: 'Online Story Point Estimation',
+    description: 'Online story point estimation tool for agile teams. No signup required. Real-time team voting for sprint planning and collaboration.',
+    keywords: ['story points', 'story point estimation', 'agile estimation', 'sprint planning', 'scrum estimation', 'team estimation', 'agile team tools', 'online estimation tool', 'agile voting', 'sprint estimation'],
     docsUrl: 'https://docs.storypoint-estimate.com',
   },
 };
@@ -31,9 +31,9 @@ const BRAND_CONFIG: Record<string, BrandConfig> = {
 const DEFAULT_BRAND: BrandConfig = {
   name: 'Sakiyomi',
   shortName: 'Sakiyomi',
-  tagline: 'Free Online Story Point Estimation',
-  description: 'Free online story point estimation tool for agile teams. No signup required. Real-time team voting for sprint planning and collaboration.',
-  keywords: ['story points', 'story point estimation', 'agile estimation', 'sprint planning', 'scrum estimation', 'team estimation', 'agile team tools', 'online estimation tool', 'free estimation tool', 'agile voting', 'sprint estimation'],
+  tagline: 'Online Story Point Estimation',
+  description: 'Online story point estimation tool for agile teams. No signup required. Real-time team voting for sprint planning and collaboration.',
+  keywords: ['story points', 'story point estimation', 'agile estimation', 'sprint planning', 'scrum estimation', 'team estimation', 'agile team tools', 'online estimation tool', 'agile voting', 'sprint estimation'],
   docsUrl: 'https://docs.sakiyomi.dev',
 };
 

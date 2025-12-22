@@ -1,13 +1,13 @@
 ---
 title: Quick Start
-description: Get started with Storypoint Estimate in under a minute.
+description: Get started with Sakiyomi in under a minute.
 ---
 
 Get your team estimating in under a minute with this quick start guide.
 
 ## 1. Create a Room
 
-1. Go to [storypoint-estimate.com](https://storypoint-estimate.com)
+1. Go to [sakiyomi.dev](https://sakiyomi.dev)
 2. Click **Create Room**
 3. Enter a room name (e.g., "Sprint 42 Planning")
 4. Click **Create**

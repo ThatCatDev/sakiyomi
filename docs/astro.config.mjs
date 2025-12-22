@@ -6,11 +6,11 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
 	integrations: [
 		starlight({
-			title: 'Storypoint Estimate Docs',
-			description: 'Documentation for Storypoint Estimate - free online story point estimation tool for agile teams.',
+			title: 'Sakiyomi Docs',
+			description: 'Documentation for Sakiyomi - an open-source story point estimation tool for agile teams.',
 			logo: {
 				src: './src/assets/logo.svg',
-				alt: 'Storypoint Estimate',
+				alt: 'Sakiyomi',
 			},
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/thatcatdev/sakiyomi' },
@@ -29,7 +29,8 @@ export default defineConfig({
 					items: [
 						{ label: 'Creating Rooms', slug: 'features/creating-rooms' },
 						{ label: 'Voting', slug: 'features/voting' },
-						{ label: 'Team Management', slug: 'features/team-management' },
+						{ label: 'Room Participants', slug: 'features/team-management' },
+						{ label: 'Teams', slug: 'features/teams' },
 					],
 				},
 				{

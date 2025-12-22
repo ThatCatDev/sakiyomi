@@ -1,9 +1,9 @@
 ---
-title: Team Management
+title: Room Participants
 description: Managing participants and roles in your estimation room.
 ---
 
-Managers have special controls to facilitate smooth estimation sessions.
+Managers have special controls to facilitate smooth estimation sessions. This page covers managing participants within a room. For organizational teams with persistent membership, see [Teams](/features/teams/).
 
 ![Participant Sidebar](../../../assets/screenshots/participant-sidebar-revealed.png)
 

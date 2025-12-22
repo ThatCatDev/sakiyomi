@@ -6,11 +6,11 @@ create table public.team_limits (
   team_id uuid references public.teams(id) on delete cascade not null unique,
 
   -- Limits (null = unlimited)
-  max_members integer default 5,
+  max_members integer default 10,
   max_active_rooms integer default 3,
 
-  -- Plan info (for future paid tiers)
-  plan_name text default 'free' not null,
+  -- Plan info (for future tiers)
+  plan_name text default 'default' not null,
   plan_expires_at timestamp with time zone,
 
   created_at timestamp with time zone default now() not null,

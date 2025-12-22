@@ -1,9 +1,9 @@
 ---
 title: Deployment Guide
-description: How to deploy Storypoint Estimate on your own infrastructure.
+description: How to deploy Sakiyomi on your own infrastructure.
 ---
 
-Storypoint Estimate can be self-hosted on various platforms. This guide covers deployment to Vercel with Supabase.
+Sakiyomi can be self-hosted on various platforms. This guide covers deployment to Vercel with Supabase.
 
 ## Prerequisites
 
