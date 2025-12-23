@@ -13,7 +13,7 @@
   <mj-body background-color="#f3f4f6">
     <mj-section padding="40px 20px 20px">
       <mj-column>
-        <mj-image src="{{ .SiteURL }}/logo.svg" alt="Sakiyomi" width="60px" />
+        <mj-image src="{{ .SiteURL }}/logo-email.png" alt="Sakiyomi" width="60px" />
       </mj-column>
     </mj-section>
 
