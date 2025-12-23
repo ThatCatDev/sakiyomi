@@ -1,0 +1,47 @@
+name: Deploy Email Templates
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/templates/**'
+      - '.github/workflows/email-templates.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy email templates to Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          # Read template files and escape for JSON
+          CONFIRM=$(cat supabase/templates/confirm.html | jq -Rs .)
+          RECOVERY=$(cat supabase/templates/recovery.html | jq -Rs .)
+          INVITE=$(cat supabase/templates/invite.html | jq -Rs .)
+          MAGIC_LINK=$(cat supabase/templates/magic_link.html | jq -Rs .)
+          EMAIL_CHANGE=$(cat supabase/templates/email_change.html | jq -Rs .)
+
+          # Deploy via Supabase Management API
+          curl -sf -X PATCH \
+            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/config/auth" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"mailer_templates_confirmation_content\": ${CONFIRM},
+              \"mailer_templates_confirmation_subject\": \"Confirm Your Email - Sakiyomi\",
+              \"mailer_templates_recovery_content\": ${RECOVERY},
+              \"mailer_templates_recovery_subject\": \"Reset Your Password - Sakiyomi\",
+              \"mailer_templates_invite_content\": ${INVITE},
+              \"mailer_templates_invite_subject\": \"You've Been Invited - Sakiyomi\",
+              \"mailer_templates_magic_link_content\": ${MAGIC_LINK},
+              \"mailer_templates_magic_link_subject\": \"Sign In to Sakiyomi\",
+              \"mailer_templates_email_change_content\": ${EMAIL_CHANGE},
+              \"mailer_templates_email_change_subject\": \"Confirm Email Change - Sakiyomi\"
+            }"
+
+          echo "Email templates deployed successfully!"
