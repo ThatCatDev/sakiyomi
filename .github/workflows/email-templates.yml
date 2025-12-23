@@ -27,24 +27,40 @@ jobs:
           MAGIC_LINK=$(cat supabase/templates/magic_link.html | jq -Rs .)
           EMAIL_CHANGE=$(cat supabase/templates/email_change.html | jq -Rs .)
 
+          # Build JSON payload
+          JSON_PAYLOAD=$(jq -n \
+            --argjson confirm "$CONFIRM" \
+            --argjson recovery "$RECOVERY" \
+            --argjson invite "$INVITE" \
+            --argjson magic_link "$MAGIC_LINK" \
+            --argjson email_change "$EMAIL_CHANGE" \
+            --arg site_url "$SITE_URL" \
+            '{
+              mailer_templates_confirmation_content: $confirm,
+              mailer_templates_confirmation_subject: "Confirm Your Email - Sakiyomi",
+              mailer_templates_recovery_content: $recovery,
+              mailer_templates_recovery_subject: "Reset Your Password - Sakiyomi",
+              mailer_templates_invite_content: $invite,
+              mailer_templates_invite_subject: "You have Been Invited - Sakiyomi",
+              mailer_templates_magic_link_content: $magic_link,
+              mailer_templates_magic_link_subject: "Sign In to Sakiyomi",
+              mailer_templates_email_change_content: $email_change,
+              mailer_templates_email_change_subject: "Confirm Email Change - Sakiyomi"
+            } + (if $site_url != "" then {site_url: $site_url, uri_allow_list: "\($site_url),\($site_url)/**"} else {} end)')
+
           # Deploy via Supabase Management API
-          curl -sf -X PATCH \
+          echo "Deploying to project: ${SUPABASE_PROJECT_REF}"
+
+          HTTP_CODE=$(curl -s -o response.txt -w "%{http_code}" -X PATCH \
             "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/config/auth" \
             -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"site_url\": \"${SITE_URL}\",
-              \"uri_allow_list\": \"${SITE_URL},${SITE_URL}/**\",
-              \"mailer_templates_confirmation_content\": ${CONFIRM},
-              \"mailer_templates_confirmation_subject\": \"Confirm Your Email - Sakiyomi\",
-              \"mailer_templates_recovery_content\": ${RECOVERY},
-              \"mailer_templates_recovery_subject\": \"Reset Your Password - Sakiyomi\",
-              \"mailer_templates_invite_content\": ${INVITE},
-              \"mailer_templates_invite_subject\": \"You've Been Invited - Sakiyomi\",
-              \"mailer_templates_magic_link_content\": ${MAGIC_LINK},
-              \"mailer_templates_magic_link_subject\": \"Sign In to Sakiyomi\",
-              \"mailer_templates_email_change_content\": ${EMAIL_CHANGE},
-              \"mailer_templates_email_change_subject\": \"Confirm Email Change - Sakiyomi\"
-            }"
+            -d "$JSON_PAYLOAD")
 
-          echo "Email templates deployed successfully!"
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Email templates deployed successfully! (HTTP $HTTP_CODE)"
+          else
+            echo "Failed to deploy templates (HTTP $HTTP_CODE)"
+            cat response.txt
+            exit 1
+          fi
