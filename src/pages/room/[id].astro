@@ -168,7 +168,7 @@ const appName = getAppName(Astro.url.hostname);
 
 <Layout title={`${room.name} - ${appName}`}>
   <main class="min-h-screen flex flex-col">
-    <Header user={user} variant="room" roomName={room.name} showSettings={!!currentParticipant} participantCount={participants.length} roomUrl={roomUrl}>
+    <Header user={user} roomName={room.name} showSettings={!!currentParticipant} participantCount={participants.length} roomUrl={roomUrl}>
       <div slot="extra" class="hidden md:flex items-center gap-2 bg-surface-secondary rounded-lg px-3 py-1.5 border border-border-default">
         <input
           type="text"

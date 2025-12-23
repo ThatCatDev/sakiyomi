@@ -5,7 +5,6 @@ import { getAppName, getDocsUrl } from '../lib/branding';
 
 interface Props {
   user?: { email?: string } | null;
-  variant?: 'homepage' | 'app' | 'room';
   roomName?: string;
   showSettings?: boolean;
   participantCount?: number;
@@ -15,7 +14,6 @@ interface Props {
 
 const {
   user,
-  variant = 'app',
   roomName,
   showSettings = false,
   participantCount = 0,
@@ -25,103 +23,41 @@ const {
 
 const appName = getAppName(Astro.url.hostname);
 const docsUrl = getDocsUrl(Astro.url.hostname);
+const isRoom = !!roomName;
 ---
 
-{variant === 'room' ? (
-  <!-- Room header: compact layout with room info -->
-  <nav class="border-b border-border-default flex-shrink-0 relative z-50">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-2 sm:gap-4 min-w-0">
-        <a href="/" class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <img src="/logo.svg" alt={appName} class="w-8 h-8" />
-          <span class="font-bold text-content-primary hidden sm:inline text-lg">{appName}</span>
-        </a>
-        <span class="text-content-muted hidden sm:inline">|</span>
-        <h1 class="text-content-primary font-medium truncate max-w-[120px] sm:max-w-none text-sm sm:text-base" id="room-name-display">{roomName}</h1>
-        {showSettings && (
-          <button
-            id="open-settings-btn"
-            class="text-content-muted hover:text-content-primary transition-colors p-1 flex-shrink-0"
-            title="Room Settings"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
-        )}
-      </div>
+<nav class="border-b border-border-default flex-shrink-0 relative z-50">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <!-- Left: Logo + Room info if applicable -->
+    <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+      <a href="/" class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <img src="/logo.svg" alt={appName} class="w-8 h-8" />
+        <span class="font-bold text-content-primary hidden sm:inline text-lg">{appName}</span>
+      </a>
 
-      <div class="flex items-center gap-2 sm:gap-4">
-        <div class="hidden sm:flex items-center gap-4">
-          <a href={docsUrl} target="_blank" rel="noopener noreferrer" class="text-content-secondary hover:text-content-primary transition-colors text-sm">
-            Docs
-          </a>
-        </div>
-
-        {showThemeToggle && <ThemeToggle />}
-
-        <slot name="extra" />
-
-        <!-- Share button -->
-        <button
-          id="mobile-share-btn"
-          class="lg:hidden p-2 bg-surface-secondary hover:bg-surface-tertiary text-content-primary rounded-lg transition-colors"
-          aria-label="Share room"
-          data-room-url={roomUrl}
-          data-room-name={roomName}
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-          </svg>
-        </button>
-        <!-- Participants button -->
-        <button
-          id="mobile-participants-btn"
-          class="lg:hidden flex items-center gap-1.5 px-3 py-1.5 bg-surface-secondary hover:bg-surface-tertiary text-content-primary rounded-lg transition-colors"
-          aria-label="View participants"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-          </svg>
-          <span id="mobile-participant-count" class="text-sm font-medium">{participantCount}</span>
-        </button>
-
-        {user ? (
-          <UserMenu email={user.email || ''} />
-        ) : (
-          <>
-            <a href="/login" class="hidden sm:inline text-content-secondary hover:text-content-primary transition-colors text-sm">
-              Sign in
-            </a>
-            <a href="/signup" class="hidden sm:inline-block px-3 sm:px-4 py-2 bg-brand hover:bg-brand-hover text-white font-medium rounded-xl transition-colors text-sm">
-              Sign up
-            </a>
-          </>
-        )}
-
-        <!-- Mobile hamburger -->
-        <button
-          id="mobile-menu-btn"
-          class="sm:hidden text-content-secondary hover:text-content-primary transition-colors p-1"
-          aria-label="Menu"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      </div>
+      {isRoom && (
+        <>
+          <span class="text-content-muted hidden sm:inline">|</span>
+          <h1 class="text-content-primary font-medium truncate max-w-[120px] sm:max-w-none text-sm sm:text-base" id="room-name-display">{roomName}</h1>
+          {showSettings && (
+            <button
+              id="open-settings-btn"
+              class="text-content-muted hover:text-content-primary transition-colors p-1 flex-shrink-0"
+              title="Room Settings"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          )}
+        </>
+      )}
     </div>
-  </nav>
-) : variant === 'homepage' ? (
-  <!-- Homepage header: centered logo layout -->
-  <nav class="border-b border-border-default flex-shrink-0 relative z-50">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-      <!-- Left: Nav links -->
+
+    <!-- Right: Nav + Actions -->
+    <div class="flex items-center gap-2 sm:gap-4">
       <div class="hidden sm:flex items-center gap-6">
-        <a href="#features" class="text-content-secondary hover:text-content-primary transition-colors text-sm">
-          Features
-        </a>
         <a href={docsUrl} target="_blank" rel="noopener noreferrer" class="text-content-secondary hover:text-content-primary transition-colors text-sm">
           Docs
         </a>
@@ -130,98 +66,65 @@ const docsUrl = getDocsUrl(Astro.url.hostname);
         </a>
       </div>
 
-      <!-- Center: Logo -->
-      <a href="/" class="flex items-center gap-3 absolute left-1/2 -translate-x-1/2">
-        <img src="/logo.svg" alt={appName} class="w-9 h-9" />
-        <span class="font-bold text-content-primary text-xl">{appName}</span>
-      </a>
+      {showThemeToggle && <ThemeToggle />}
 
-      <!-- Right: CTA -->
-      <div class="flex items-center gap-3">
-        {showThemeToggle && <ThemeToggle />}
+      <slot name="extra" />
 
-        <slot name="extra" />
+      {/* Room-specific buttons */}
+      {isRoom && (
+        <>
+          <button
+            id="mobile-share-btn"
+            class="lg:hidden p-2 bg-surface-secondary hover:bg-surface-tertiary text-content-primary rounded-lg transition-colors"
+            aria-label="Share room"
+            data-room-url={roomUrl}
+            data-room-name={roomName}
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
+          <button
+            id="mobile-participants-btn"
+            class="lg:hidden flex items-center gap-1.5 px-3 py-1.5 bg-surface-secondary hover:bg-surface-tertiary text-content-primary rounded-lg transition-colors"
+            aria-label="View participants"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            </svg>
+            <span id="mobile-participant-count" class="text-sm font-medium">{participantCount}</span>
+          </button>
+        </>
+      )}
 
-        {user ? (
-          <UserMenu email={user.email || ''} />
-        ) : (
-          <>
-            <a href="/login" class="hidden sm:inline text-content-secondary hover:text-content-primary transition-colors text-sm">
-              Sign in
-            </a>
-            <a href="/signup" class="hidden sm:inline-block px-5 py-2 border border-border-default hover:border-content-primary text-content-primary font-medium rounded-full transition-colors text-sm">
-              Get Started
-            </a>
-          </>
-        )}
-
-        <!-- Mobile hamburger -->
-        <button
-          id="mobile-menu-btn"
-          class="sm:hidden text-content-secondary hover:text-content-primary transition-colors p-1"
-          aria-label="Menu"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  </nav>
-) : (
-  <!-- App header: standard left-aligned layout -->
-  <nav class="border-b border-border-default flex-shrink-0 relative z-50">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-      <!-- Left: Logo -->
-      <a href="/" class="flex items-center gap-3">
-        <img src="/logo.svg" alt={appName} class="w-9 h-9" />
-        <span class="font-bold text-content-primary text-xl hidden sm:inline">{appName}</span>
-      </a>
-
-      <!-- Right: Nav + CTA -->
-      <div class="flex items-center gap-4">
-        <div class="hidden sm:flex items-center gap-6">
-          <a href={docsUrl} target="_blank" rel="noopener noreferrer" class="text-content-secondary hover:text-content-primary transition-colors text-sm">
-            Docs
+      {user ? (
+        <UserMenu email={user.email || ''} />
+      ) : (
+        <>
+          <a href="/login" class="hidden sm:inline text-content-secondary hover:text-content-primary transition-colors text-sm">
+            Sign in
           </a>
-          <a href="https://github.com/thatcatdev/sakiyomi" target="_blank" rel="noopener noreferrer" class="text-content-secondary hover:text-content-primary transition-colors text-sm">
-            GitHub
+          <a href="/signup" class="hidden sm:inline-block px-4 py-2 bg-brand hover:bg-brand-hover text-white font-medium rounded-xl transition-colors text-sm">
+            Sign up
           </a>
-        </div>
+        </>
+      )}
 
-        {showThemeToggle && <ThemeToggle />}
-
-        <slot name="extra" />
-
-        {user ? (
-          <UserMenu email={user.email || ''} />
-        ) : (
-          <>
-            <a href="/login" class="hidden sm:inline text-content-secondary hover:text-content-primary transition-colors text-sm">
-              Sign in
-            </a>
-            <a href="/signup" class="hidden sm:inline-block px-5 py-2 border border-border-default hover:border-content-primary text-content-primary font-medium rounded-full transition-colors text-sm">
-              Get Started
-            </a>
-          </>
-        )}
-
-        <!-- Mobile hamburger -->
-        <button
-          id="mobile-menu-btn"
-          class="sm:hidden text-content-secondary hover:text-content-primary transition-colors p-1"
-          aria-label="Menu"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      </div>
+      <!-- Mobile hamburger -->
+      <button
+        id="mobile-menu-btn"
+        class="sm:hidden text-content-secondary hover:text-content-primary transition-colors p-1"
+        aria-label="Menu"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
     </div>
-  </nav>
-)}
+  </div>
+</nav>
 
-<!-- Mobile menu dropdown (shared across all variants) -->
+<!-- Mobile menu dropdown -->
 <div id="mobile-menu" class="hidden sm:hidden border-t border-border-default bg-surface-secondary">
   <div class="px-4 py-3 space-y-3">
     <a href={docsUrl} target="_blank" rel="noopener noreferrer" class="block text-content-secondary hover:text-content-primary transition-colors">
@@ -251,7 +154,7 @@ const docsUrl = getDocsUrl(Astro.url.hostname);
     mobileMenu?.classList.toggle('hidden');
   });
 
-  // Mobile share button (only exists in room variant)
+  // Mobile share button (only exists on room pages)
   const shareBtn = document.getElementById('mobile-share-btn') as HTMLButtonElement;
   if (shareBtn) {
     const roomUrl = shareBtn.dataset.roomUrl || window.location.href;
