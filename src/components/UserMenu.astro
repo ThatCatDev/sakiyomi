@@ -68,36 +68,47 @@ const initial = email.charAt(0).toUpperCase();
   </div>
 </div>
 
-<script>
-  const menuButton = document.getElementById('user-menu-button');
-  const dropdown = document.getElementById('user-dropdown');
-  const chevron = document.getElementById('menu-chevron');
+<script is:inline>
+  (function initUserMenu() {
+    const menuButton = document.getElementById('user-menu-button');
+    const dropdown = document.getElementById('user-dropdown');
+    const chevron = document.getElementById('menu-chevron');
 
-  if (menuButton && dropdown && chevron) {
+    if (!menuButton || !dropdown || !chevron) return;
+
     // Toggle dropdown
-    menuButton.addEventListener('click', (e) => {
+    menuButton.onclick = (e) => {
       e.stopPropagation();
       const isHidden = dropdown.classList.contains('hidden');
       dropdown.classList.toggle('hidden');
       chevron.classList.toggle('rotate-180');
       menuButton.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-    });
+    };
+  })();
 
-    // Close on click outside
+  // Close dropdowns on click outside or escape (only add once)
+  if (!window.__userMenuGlobalInit) {
+    window.__userMenuGlobalInit = true;
     document.addEventListener('click', (e) => {
-      if (!dropdown.contains(e.target as Node) && !menuButton.contains(e.target as Node)) {
+      const dropdown = document.getElementById('user-dropdown');
+      const menuButton = document.getElementById('user-menu-button');
+      const chevron = document.getElementById('menu-chevron');
+      if (dropdown && menuButton && !dropdown.contains(e.target) && !menuButton.contains(e.target)) {
         dropdown.classList.add('hidden');
-        chevron.classList.remove('rotate-180');
+        chevron?.classList.remove('rotate-180');
         menuButton.setAttribute('aria-expanded', 'false');
       }
     });
-
-    // Close on escape
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        dropdown.classList.add('hidden');
-        chevron.classList.remove('rotate-180');
-        menuButton.setAttribute('aria-expanded', 'false');
+        const dropdown = document.getElementById('user-dropdown');
+        const menuButton = document.getElementById('user-menu-button');
+        const chevron = document.getElementById('menu-chevron');
+        if (dropdown && menuButton) {
+          dropdown.classList.add('hidden');
+          chevron?.classList.remove('rotate-180');
+          menuButton.setAttribute('aria-expanded', 'false');
+        }
       }
     });
   }

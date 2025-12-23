@@ -180,3 +180,12 @@ body {
   background-clip: text;
 }
 
+/* View Transitions */
+::view-transition-old(root) {
+  animation: fade-out 0.15s ease-out forwards;
+}
+
+::view-transition-new(root) {
+  animation: fade-in 0.15s ease-out forwards;
+}
+

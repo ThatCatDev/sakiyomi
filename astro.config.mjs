@@ -10,6 +10,11 @@ export default defineConfig({
 
   adapter: vercel(),
 
+  prefetch: {
+    prefetchAll: true,
+    defaultStrategy: 'viewport',
+  },
+
   vite: {
     plugins: [tailwindcss()]
   }

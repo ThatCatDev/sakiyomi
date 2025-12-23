@@ -154,48 +154,52 @@ const isRoom = !!roomName;
   </div>
 </div>
 
-<script>
-  const menuBtn = document.getElementById('mobile-menu-btn');
-  const mobileMenu = document.getElementById('mobile-menu');
+<script is:inline>
+  (function initHeader() {
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
 
-  menuBtn?.addEventListener('click', () => {
-    mobileMenu?.classList.toggle('hidden');
-  });
+    if (menuBtn) {
+      menuBtn.onclick = () => {
+        mobileMenu?.classList.toggle('hidden');
+      };
+    }
 
-  // Mobile share button (only exists on room pages)
-  const shareBtn = document.getElementById('mobile-share-btn') as HTMLButtonElement;
-  if (shareBtn) {
-    const roomUrl = shareBtn.dataset.roomUrl || window.location.href;
-    const roomName = shareBtn.dataset.roomName || 'Room';
+    // Mobile share button (only exists on room pages)
+    const shareBtn = document.getElementById('mobile-share-btn');
+    if (shareBtn) {
+      const roomUrl = shareBtn.dataset.roomUrl || window.location.href;
+      const roomName = shareBtn.dataset.roomName || 'Room';
 
-    shareBtn.addEventListener('click', async () => {
-      // Try native share first
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: `Join ${roomName}`,
-            text: `Join my estimation session: ${roomName}`,
-            url: roomUrl,
-          });
-          return;
-        } catch (err) {
-          // User cancelled or share failed, fall back to clipboard
-          if ((err as Error).name === 'AbortError') return;
+      shareBtn.onclick = async () => {
+        // Try native share first
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: 'Join ' + roomName,
+              text: 'Join my estimation session: ' + roomName,
+              url: roomUrl,
+            });
+            return;
+          } catch (err) {
+            // User cancelled or share failed, fall back to clipboard
+            if (err.name === 'AbortError') return;
+          }
         }
-      }
 
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(roomUrl);
-        // Show feedback
-        const originalHtml = shareBtn.innerHTML;
-        shareBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>`;
-        setTimeout(() => {
-          shareBtn.innerHTML = originalHtml;
-        }, 2000);
-      } catch (err) {
-        console.error('Failed to copy:', err);
-      }
-    });
-  }
+        // Fallback: copy to clipboard
+        try {
+          await navigator.clipboard.writeText(roomUrl);
+          // Show feedback
+          const originalHtml = shareBtn.innerHTML;
+          shareBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+          setTimeout(() => {
+            shareBtn.innerHTML = originalHtml;
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy:', err);
+        }
+      };
+    }
+  })();
 </script>

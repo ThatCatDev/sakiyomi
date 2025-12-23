@@ -92,103 +92,95 @@ const menuWidth = variant === 'compact' ? 'min-w-[120px]' : 'w-full';
   </div>
 </div>
 
-<script>
-  function initDropdowns() {
-    document.querySelectorAll('[data-dropdown-id]').forEach((wrapper) => {
-      const trigger = wrapper.querySelector('[data-dropdown-trigger]') as HTMLButtonElement;
-      const menu = wrapper.querySelector('[data-dropdown-menu]') as HTMLElement;
-      const input = wrapper.querySelector('input[type="hidden"]') as HTMLInputElement;
-      const textEl = wrapper.querySelector('[data-dropdown-text]') as HTMLElement;
-      const chevron = wrapper.querySelector('[data-dropdown-chevron]') as HTMLElement;
-      const options = wrapper.querySelectorAll('[data-dropdown-option]') as NodeListOf<HTMLButtonElement>;
+<script is:inline>
+  (function initDropdowns() {
+    document.querySelectorAll('[data-dropdown-id]').forEach(function(wrapper) {
+      var trigger = wrapper.querySelector('[data-dropdown-trigger]');
+      var menu = wrapper.querySelector('[data-dropdown-menu]');
+      var input = wrapper.querySelector('input[type="hidden"]');
+      var textEl = wrapper.querySelector('[data-dropdown-text]');
+      var chevron = wrapper.querySelector('[data-dropdown-chevron]');
+      var options = wrapper.querySelectorAll('[data-dropdown-option]');
 
       if (!trigger || !menu || !input || !textEl) return;
 
-      // Skip if already initialized
-      if ((trigger as any).__dropdownInit) return;
-      (trigger as any).__dropdownInit = true;
+      var isOpen = false;
+      var focusedIndex = -1;
 
-      let isOpen = false;
-      let focusedIndex = -1;
-
-      const open = () => {
+      function open() {
         isOpen = true;
         trigger.setAttribute('aria-expanded', 'true');
         menu.classList.remove('opacity-0', 'invisible', 'scale-95');
         menu.classList.add('opacity-100', 'visible', 'scale-100');
-        chevron?.classList.add('rotate-180');
+        if (chevron) chevron.classList.add('rotate-180');
 
-        // Focus currently selected option
-        const selectedIdx = Array.from(options).findIndex(opt => opt.getAttribute('aria-selected') === 'true');
+        var selectedIdx = Array.from(options).findIndex(function(opt) {
+          return opt.getAttribute('aria-selected') === 'true';
+        });
         focusedIndex = selectedIdx >= 0 ? selectedIdx : 0;
-        options[focusedIndex]?.focus();
-      };
+        if (options[focusedIndex]) options[focusedIndex].focus();
+      }
 
-      const close = () => {
+      function close() {
         isOpen = false;
         trigger.setAttribute('aria-expanded', 'false');
         menu.classList.add('opacity-0', 'invisible', 'scale-95');
         menu.classList.remove('opacity-100', 'visible', 'scale-100');
-        chevron?.classList.remove('rotate-180');
+        if (chevron) chevron.classList.remove('rotate-180');
         focusedIndex = -1;
-      };
+      }
 
-      const select = (option: HTMLButtonElement) => {
-        const value = option.dataset.value || '';
-        const label = option.dataset.label || '';
+      function select(option) {
+        var value = option.dataset.value || '';
+        var label = option.dataset.label || '';
 
         input.value = value;
         textEl.textContent = label;
 
-        // Update selected state
-        options.forEach((opt) => {
-          const isSelected = opt === option;
+        options.forEach(function(opt) {
+          var isSelected = opt === option;
           opt.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+          var checkSpan = opt.querySelector('span');
           if (isSelected) {
             opt.classList.add('text-brand', 'font-medium');
             opt.classList.remove('text-content-primary');
-            opt.querySelector('span')?.classList.remove('opacity-0');
+            if (checkSpan) checkSpan.classList.remove('opacity-0');
           } else {
             opt.classList.remove('text-brand', 'font-medium');
             opt.classList.add('text-content-primary');
-            opt.querySelector('span')?.classList.add('opacity-0');
+            if (checkSpan) checkSpan.classList.add('opacity-0');
           }
         });
 
-        // Dispatch change event
         input.dispatchEvent(new Event('change', { bubbles: true }));
         close();
         trigger.focus();
-      };
+      }
 
-      // Toggle on trigger click
-      trigger.addEventListener('click', (e) => {
+      // Use onclick to avoid duplicate listeners on re-init
+      trigger.onclick = function(e) {
         e.preventDefault();
         e.stopPropagation();
         isOpen ? close() : open();
-      });
+      };
 
-      // Select option on click
-      options.forEach((option) => {
-        option.addEventListener('click', (e) => {
+      options.forEach(function(option) {
+        option.onclick = function(e) {
           e.preventDefault();
           e.stopPropagation();
           select(option);
-        });
+        };
       });
 
-      // Keyboard navigation
-      wrapper.addEventListener('keydown', (e) => {
-        const key = (e as KeyboardEvent).key;
-
-        if (!isOpen && (key === 'Enter' || key === ' ' || key === 'ArrowDown')) {
+      wrapper.onkeydown = function(e) {
+        if (!isOpen && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown')) {
           e.preventDefault();
           open();
           return;
         }
 
         if (isOpen) {
-          switch (key) {
+          switch (e.key) {
             case 'Escape':
               e.preventDefault();
               close();
@@ -197,36 +189,42 @@ const menuWidth = variant === 'compact' ? 'min-w-[120px]' : 'w-full';
             case 'ArrowDown':
               e.preventDefault();
               focusedIndex = (focusedIndex + 1) % options.length;
-              options[focusedIndex]?.focus();
+              if (options[focusedIndex]) options[focusedIndex].focus();
               break;
             case 'ArrowUp':
               e.preventDefault();
               focusedIndex = focusedIndex <= 0 ? options.length - 1 : focusedIndex - 1;
-              options[focusedIndex]?.focus();
+              if (options[focusedIndex]) options[focusedIndex].focus();
               break;
             case 'Enter':
             case ' ':
               e.preventDefault();
-              if (focusedIndex >= 0) {
-                select(options[focusedIndex]);
-              }
+              if (focusedIndex >= 0) select(options[focusedIndex]);
               break;
             case 'Tab':
               close();
               break;
           }
         }
-      });
+      };
+    });
+  })();
 
-      // Close on outside click
-      document.addEventListener('click', (e) => {
-        if (isOpen && !wrapper.contains(e.target as Node)) {
-          close();
+  // Global click handler to close dropdowns (only add once)
+  if (!window.__dropdownGlobalInit) {
+    window.__dropdownGlobalInit = true;
+    document.addEventListener('click', function(e) {
+      document.querySelectorAll('[data-dropdown-menu]').forEach(function(menu) {
+        var wrapper = menu.closest('[data-dropdown-id]');
+        var chevron = wrapper ? wrapper.querySelector('[data-dropdown-chevron]') : null;
+        var trigger = wrapper ? wrapper.querySelector('[data-dropdown-trigger]') : null;
+        if (wrapper && !wrapper.contains(e.target) && !menu.classList.contains('invisible')) {
+          menu.classList.add('opacity-0', 'invisible', 'scale-95');
+          menu.classList.remove('opacity-100', 'visible', 'scale-100');
+          if (chevron) chevron.classList.remove('rotate-180');
+          if (trigger) trigger.setAttribute('aria-expanded', 'false');
         }
       });
     });
   }
-
-  initDropdowns();
-  document.addEventListener('astro:page-load', initDropdowns);
 </script>
