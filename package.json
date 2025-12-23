@@ -9,6 +9,7 @@
     "build:emails": "bun supabase/templates/build.js",
     "preview": "bunx --bun astro preview",
     "astro": "astro",
+    "supabase:start": "supabase start && sleep 2 && docker restart supabase_auth_sakiyomi",
     "test": "bunx playwright test",
     "test:unit": "bunx vitest run",
     "test:unit:watch": "bunx vitest",
