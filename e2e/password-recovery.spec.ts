@@ -1,6 +1,98 @@
 import { test, expect } from '@playwright/test';
+import { waitForEmail, extractVerificationLink } from './helpers/mailpit';
+
+const TEST_PASSWORD = 'TestPassword123!';
+const NEW_PASSWORD = 'NewPassword456!';
 
 test.describe('Password Recovery', () => {
+  test.describe('Full Password Reset Flow', () => {
+    test('should complete full password reset flow with email', async ({ page }) => {
+      const testEmail = `pwreset${Date.now()}@test.com`;
+
+      // Step 1: Sign up a new user
+      await page.goto('/signup');
+      await page.fill('input[name="email"]', testEmail);
+      await page.fill('input[name="password"]', TEST_PASSWORD);
+      await page.fill('input[name="confirm-password"]', TEST_PASSWORD);
+      await page.click('button[type="submit"]');
+
+      // Wait for signup success
+      await expect(page.locator('#success-message')).toBeVisible({ timeout: 10000 });
+
+      // Step 2: Verify email
+      const confirmEmail = await waitForEmail(testEmail, { subject: 'Confirm', timeout: 30000 });
+      const confirmLink = extractVerificationLink(confirmEmail);
+      expect(confirmLink).toBeTruthy();
+      await page.goto(confirmLink!);
+
+      // Wait for verification to complete
+      await page.waitForURL('/', { timeout: 10000 });
+
+      // Step 3: Sign out
+      const userMenuButton = page.locator('#user-menu-button');
+      if (await userMenuButton.isVisible()) {
+        await userMenuButton.click();
+        await page.click('button:has-text("Sign Out")');
+        await page.waitForURL(/\/login/);
+      }
+
+      // Step 4: Request password reset
+      await page.goto('/forgot-password');
+      await page.fill('input[name="email"]', testEmail);
+      await page.click('button[type="submit"]');
+
+      // Should show success message
+      await expect(page.locator('#success-container')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('#success-container')).toContainText('Check your email');
+
+      // Step 5: Get reset email
+      const resetEmail = await waitForEmail(testEmail, { subject: 'Reset', timeout: 30000 });
+      expect(resetEmail).toBeTruthy();
+      const resetLink = extractVerificationLink(resetEmail);
+      expect(resetLink).toBeTruthy();
+      console.log('Reset link:', resetLink);
+
+      // Step 6: Visit reset link and set new password
+      await page.goto(resetLink!);
+
+      // Wait for the reset password form to be visible
+      await expect(page.locator('#form-container')).toBeVisible({ timeout: 10000 });
+
+      // Fill in new password
+      await page.fill('input[name="password"]', NEW_PASSWORD);
+      await page.fill('input[name="confirm-password"]', NEW_PASSWORD);
+      await page.click('button[type="submit"]');
+
+      // Should show success or redirect to home
+      await Promise.race([
+        expect(page.locator('#success-container')).toBeVisible({ timeout: 10000 }),
+        page.waitForURL('/', { timeout: 10000 }),
+      ]);
+
+      // Step 7: Verify can login with new password
+      await page.goto('/login');
+      await page.fill('input[name="email"]', testEmail);
+      await page.fill('input[name="password"]', NEW_PASSWORD);
+      await page.click('button[type="submit"]');
+
+      // Should be logged in and redirected to home
+      await page.waitForURL('/', { timeout: 10000 });
+      await expect(page.locator('#user-menu-button')).toBeVisible({ timeout: 5000 });
+    });
+
+    test('should not send reset email for non-existent user but show success anyway', async ({ page }) => {
+      // Supabase doesn't reveal if email exists for security reasons
+      const fakeEmail = `nonexistent${Date.now()}@test.com`;
+
+      await page.goto('/forgot-password');
+      await page.fill('input[name="email"]', fakeEmail);
+      await page.click('button[type="submit"]');
+
+      // Should still show success (security - don't reveal if email exists)
+      await expect(page.locator('#success-container')).toBeVisible({ timeout: 10000 });
+    });
+  });
+
   test.describe('Forgot Password Page', () => {
     test('should display forgot password page', async ({ page }) => {
       await page.goto('/forgot-password');

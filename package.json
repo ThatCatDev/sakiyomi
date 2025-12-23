@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bunx --bun astro dev",
     "build": "bunx --bun astro build",
+    "build:emails": "bun supabase/templates/build.js",
     "preview": "bunx --bun astro preview",
     "astro": "astro",
     "test": "bunx playwright test",
@@ -29,6 +30,7 @@
     "@playwright/test": "^1.57.0",
     "@testing-library/dom": "^10.4.1",
     "jsdom": "^27.3.0",
+    "mjml": "^4.18.0",
     "vitest": "^4.0.16"
   }
 }
