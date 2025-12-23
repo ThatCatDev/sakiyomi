@@ -174,7 +174,6 @@ export class RoomBloc {
           filter: `id=eq.${this.roomId}`,
         },
         (payload) => {
-          console.log('[RoomBloc] Room update received:', payload);
           const room = payload.new as {
             name: string;
             voting_status: VotingStatus;
@@ -188,10 +187,6 @@ export class RoomBloc {
           const showVotesChanged = room.show_votes !== this.showVotes;
           const voteOptionsChanged = JSON.stringify(room.vote_options) !== JSON.stringify(this.voteOptions);
           const nameChanged = room.name !== this.roomName;
-
-          console.log('[RoomBloc] Status changed:', statusChanged, 'from', this.votingStatus, 'to', room.voting_status);
-          console.log('[RoomBloc] Topic changed:', topicChanged, 'from', this.currentTopic, 'to', room.current_topic);
-          console.log('[RoomBloc] Show votes changed:', showVotesChanged, 'from', this.showVotes, 'to', room.show_votes);
 
           this.votingStatus = room.voting_status;
           this.currentTopic = room.current_topic || '';
@@ -240,9 +235,7 @@ export class RoomBloc {
           }
         }
       )
-      .subscribe((status) => {
-        console.log('[RoomBloc] Room channel subscription status:', status);
-      });
+      .subscribe();
 
     // Subscribe to presence for online status
     this.presenceChannel = this.supabase
@@ -266,7 +259,6 @@ export class RoomBloc {
         });
       })
       .subscribe(async (status) => {
-        console.log('[RoomBloc] Presence channel status:', status);
         if (status === 'SUBSCRIBED' && this.currentParticipantId) {
           await this.presenceChannel?.track({
             participantId: this.currentParticipantId,
@@ -313,14 +305,12 @@ export class RoomBloc {
   }
 
   async startVoting(topic: string = ''): Promise<boolean> {
-    console.log('[RoomBloc] startVoting called, isManager:', this.isManager);
     if (!this.isManager) {
       this.emit({ type: 'error', payload: 'Only managers can start voting' });
       return false;
     }
 
     const result = await api.startVoting(this.roomId, topic);
-    console.log('[RoomBloc] startVoting API result:', result);
 
     if (!result.success) {
       this.emit({ type: 'error', payload: result.error });

@@ -407,6 +407,11 @@ const appName = getAppName(Astro.url.hostname);
   }
 
   // Run on initial load and after View Transitions
-  initRoom();
+  // Use DOMContentLoaded to ensure all inline scripts have run
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRoom);
+  } else {
+    initRoom();
+  }
   document.addEventListener('astro:page-load', initRoom);
 </script>
