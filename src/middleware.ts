@@ -30,8 +30,15 @@ export const onRequest = defineMiddleware(async ({ url, redirect, request, cooki
   // Handle PKCE code exchange from Supabase auth callback
   const code = url.searchParams.get('code');
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error) {
+      console.error('Auth code exchange error:', error.message);
+      // Redirect to login with error message
+      return redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    }
+
+    if (data.session) {
       // Remove code from URL and redirect
       const cleanUrl = new URL(url);
       cleanUrl.searchParams.delete('code');
