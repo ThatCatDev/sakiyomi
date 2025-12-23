@@ -161,9 +161,7 @@ export class RoomBloc {
           });
         }
       )
-      .subscribe((status, err) => {
-        console.log('[RoomBloc] Participants channel:', status, err?.message || '');
-      });
+      .subscribe();
 
     // Subscribe to room changes
     this.roomChannel = this.supabase
@@ -177,7 +175,6 @@ export class RoomBloc {
           filter: `id=eq.${this.roomId}`,
         },
         (payload) => {
-          console.log('[RoomBloc] Room update received:', payload.new);
           const room = payload.new as {
             name: string;
             voting_status: VotingStatus;
@@ -239,9 +236,7 @@ export class RoomBloc {
           }
         }
       )
-      .subscribe((status, err) => {
-        console.log('[RoomBloc] Room channel:', status, err?.message || '');
-      });
+      .subscribe();
 
     // Subscribe to presence for online status
     this.presenceChannel = this.supabase

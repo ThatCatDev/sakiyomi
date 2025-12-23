@@ -62,7 +62,8 @@ test.describe('Profile Page', () => {
 
       // Check form fields are present
       await expect(page.locator('input#display_name')).toBeVisible();
-      await expect(page.locator('input#avatar_url')).toBeVisible();
+      await expect(page.locator('#avatar-styles')).toBeVisible();
+      await expect(page.locator('#avatar-variations')).toBeVisible();
       await expect(page.locator('button:has-text("Save Changes")')).toBeVisible();
     });
 
@@ -79,28 +80,35 @@ test.describe('Profile Page', () => {
       await expect(page.locator('#profile-success')).toContainText('Profile updated successfully');
     });
 
-    test('should update avatar URL', async ({ page }) => {
+    test('should update avatar by selecting a style', async ({ page }) => {
       await signUpUser(page, 'updateavatar');
       await page.goto('/profile');
 
-      const avatarUrl = 'https://api.dicebear.com/7.x/adventurer/svg?seed=test123';
-      await page.fill('input#avatar_url', avatarUrl);
+      // Click on a different avatar style (e.g., bottts/Robots)
+      await page.click('#avatar-styles button[data-style="bottts"]');
+
+      // Save changes
       await page.click('button:has-text("Save Changes")');
 
       // Should show success message
       await expect(page.locator('#profile-success')).toBeVisible();
     });
 
-    test('should show error for invalid avatar URL', async ({ page }) => {
-      await signUpUser(page, 'invalidurl');
+    test('should update avatar preview when style changes', async ({ page }) => {
+      await signUpUser(page, 'stylepreview');
       await page.goto('/profile');
 
-      await page.fill('input#avatar_url', 'not-a-valid-url');
-      await page.click('button:has-text("Save Changes")');
+      // Get initial avatar src
+      const avatarPreview = page.locator('#avatar-preview');
+      const initialSrc = await avatarPreview.getAttribute('src');
 
-      // Should show error message
-      await expect(page.locator('#profile-error')).toBeVisible();
-      await expect(page.locator('#profile-error')).toContainText('Invalid avatar URL');
+      // Click on a different avatar style
+      await page.click('#avatar-styles button[data-style="pixel-art"]');
+
+      // Avatar preview should have changed
+      const newSrc = await avatarPreview.getAttribute('src');
+      expect(newSrc).not.toEqual(initialSrc);
+      expect(newSrc).toContain('pixel-art');
     });
 
     test('should clear display name', async ({ page }) => {
@@ -134,16 +142,20 @@ test.describe('Profile Page', () => {
       await expect(page.locator('input#display_name')).toHaveValue(displayName);
     });
 
-    test('should update avatar preview when URL changes', async ({ page }) => {
+    test('should randomize avatar when clicking randomize button', async ({ page }) => {
       await signUpUser(page, 'avatarpreview');
       await page.goto('/profile');
 
-      const avatarUrl = 'https://api.dicebear.com/7.x/adventurer/svg?seed=preview123';
-      await page.fill('input#avatar_url', avatarUrl);
+      // Get initial avatar src
+      const avatarPreview = page.locator('#avatar-preview');
+      const initialSrc = await avatarPreview.getAttribute('src');
 
-      // The preview should update (we can check if an img tag appears)
-      const avatarPreview = page.locator('#avatar-preview img');
-      await expect(avatarPreview).toBeVisible();
+      // Click randomize button
+      await page.click('#randomize-btn');
+
+      // Avatar preview should have changed (new seed)
+      const newSrc = await avatarPreview.getAttribute('src');
+      expect(newSrc).not.toEqual(initialSrc);
     });
   });
 });
