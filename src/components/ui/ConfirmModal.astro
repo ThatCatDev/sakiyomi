@@ -1,0 +1,151 @@
+---
+/**
+ * Generic confirmation modal that can be triggered programmatically.
+ * Usage:
+ * window.showConfirm?.({
+ *   title: 'Confirm Action',
+ *   message: 'Are you sure you want to do this?',
+ *   confirmText: 'Yes, do it',
+ *   cancelText: 'Cancel',
+ *   variant: 'danger' | 'default',
+ *   onConfirm: async () => { ... }
+ * });
+ */
+---
+
+<div
+  id="confirm-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="confirm-modal-title"
+>
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-modal-backdrop></div>
+
+  <!-- Modal -->
+  <div class="relative w-full max-w-sm bg-surface-card rounded-2xl shadow-xl border border-border-default">
+    <div class="p-6">
+      <h2 id="confirm-modal-title" class="text-lg font-semibold text-content-primary mb-2">
+        Confirm
+      </h2>
+      <p id="confirm-modal-message" class="text-content-secondary mb-6">
+        Are you sure?
+      </p>
+
+      <div class="flex gap-3">
+        <button
+          type="button"
+          id="confirm-modal-cancel"
+          class="flex-1 px-4 py-2.5 bg-surface-tertiary hover:bg-surface-hover text-content-primary font-medium rounded-xl transition-colors btn-press focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-surface-card"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="confirm-modal-confirm"
+          class="flex-1 px-4 py-2.5 font-medium rounded-xl transition-colors btn-press focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface-card"
+        >
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  interface ConfirmOptions {
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'default';
+    onConfirm: () => Promise<void> | void;
+  }
+
+  function initConfirmModal() {
+    const modal = document.getElementById('confirm-modal');
+    const backdrop = modal?.querySelector('[data-modal-backdrop]');
+    const titleEl = document.getElementById('confirm-modal-title');
+    const messageEl = document.getElementById('confirm-modal-message');
+    const confirmBtn = document.getElementById('confirm-modal-confirm');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+
+    if (!modal || !backdrop || !titleEl || !messageEl || !confirmBtn || !cancelBtn) return;
+
+    let currentCallback: (() => Promise<void> | void) | null = null;
+    let originalConfirmText = '';
+
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      currentCallback = null;
+      // Reset button state
+      confirmBtn.textContent = originalConfirmText;
+      confirmBtn.removeAttribute('disabled');
+    };
+
+    const showModal = (options: ConfirmOptions) => {
+      titleEl.textContent = options.title;
+      messageEl.textContent = options.message;
+      originalConfirmText = options.confirmText || 'Confirm';
+      confirmBtn.textContent = originalConfirmText;
+      cancelBtn.textContent = options.cancelText || 'Cancel';
+
+      // Apply variant styling
+      const isDanger = options.variant === 'danger';
+      confirmBtn.className = confirmBtn.className.replace(
+        /bg-\S+|hover:bg-\S+|text-\S+|focus:ring-\S+/g,
+        ''
+      );
+      if (isDanger) {
+        confirmBtn.classList.add(
+          'bg-error', 'hover:bg-error/90', 'text-white',
+          'focus:ring-error'
+        );
+      } else {
+        confirmBtn.classList.add(
+          'bg-brand', 'hover:bg-brand-hover', 'text-white',
+          'focus:ring-brand'
+        );
+      }
+
+      currentCallback = options.onConfirm;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      confirmBtn.focus();
+    };
+
+    // Event listeners
+    backdrop.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+
+    confirmBtn.addEventListener('click', async () => {
+      if (!currentCallback) return;
+
+      confirmBtn.setAttribute('disabled', 'true');
+      confirmBtn.textContent = 'Please wait...';
+
+      try {
+        await currentCallback();
+        closeModal();
+      } catch (err) {
+        closeModal();
+        // Let the calling code handle the error
+        throw err;
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Expose global function
+    (window as any).showConfirm = showModal;
+  }
+
+  initConfirmModal();
+  document.addEventListener('astro:page-load', initConfirmModal);
+</script>

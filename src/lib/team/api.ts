@@ -217,6 +217,16 @@ export async function revokeInvitation(slug: string, invitationId: string): Prom
   }
 }
 
+export async function resendInvitation(slug: string, invitationId: string): Promise<void> {
+  const response = await fetch(`/api/teams/${slug}/invitations/${invitationId}/resend`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    const result = await response.json();
+    throw new Error(result.error || 'Failed to resend invitation');
+  }
+}
+
 // Unified invitation creation function
 export async function createInvitation(
   slug: string,

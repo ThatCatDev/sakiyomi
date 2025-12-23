@@ -26,11 +26,13 @@
     "@supabase/supabase-js": "^2.88.0",
     "@tailwindcss/vite": "^4.1.18",
     "astro": "^5.16.6",
+    "nodemailer": "^7.0.12",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@testing-library/dom": "^10.4.1",
+    "@types/nodemailer": "^7.0.4",
     "jsdom": "^27.3.0",
     "mjml": "^4.18.0",
     "vitest": "^4.0.16"

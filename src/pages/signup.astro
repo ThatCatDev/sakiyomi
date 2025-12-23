@@ -132,9 +132,23 @@ const appName = getAppName(Astro.url.hostname);
     }
 
     const supabase = createSupabaseBrowserClient();
+
+    // Get redirect param to include in email confirmation link
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get('redirect');
+
+    // Build the email redirect URL - if there's a redirect param, include it
+    const baseUrl = window.location.origin;
+    const emailRedirectTo = redirectTo
+      ? `${baseUrl}${redirectTo}`
+      : baseUrl;
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo,
+      },
     });
 
     if (error) {
@@ -142,12 +156,13 @@ const appName = getAppName(Astro.url.hostname);
       errorMessage.classList.remove('hidden');
     } else if (data.session) {
       // User was auto-confirmed (email confirmation disabled)
-      const params = new URLSearchParams(window.location.search);
-      const redirectTo = params.get('redirect') || '/';
-      window.location.href = redirectTo;
+      window.location.href = redirectTo || '/';
     } else {
       // Email confirmation required
-      successMessage.textContent = 'Check your email for the confirmation link!';
+      const message = redirectTo
+        ? 'Check your email for the confirmation link! After confirming, you\'ll be taken to accept the invitation.'
+        : 'Check your email for the confirmation link!';
+      successMessage.textContent = message;
       successMessage.classList.remove('hidden');
       form.reset();
     }

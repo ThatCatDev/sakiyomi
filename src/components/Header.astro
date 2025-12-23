@@ -10,6 +10,7 @@ interface Props {
   participantCount?: number;
   roomUrl?: string;
   showThemeToggle?: boolean;
+  ctaStyle?: 'default' | 'homepage';
 }
 
 const {
@@ -18,7 +19,8 @@ const {
   showSettings = false,
   participantCount = 0,
   roomUrl,
-  showThemeToggle = true
+  showThemeToggle = true,
+  ctaStyle = 'default'
 } = Astro.props;
 
 const appName = getAppName(Astro.url.hostname);
@@ -104,9 +106,15 @@ const isRoom = !!roomName;
           <a href="/login" class="hidden sm:inline text-content-secondary hover:text-content-primary transition-colors text-sm">
             Sign in
           </a>
-          <a href="/signup" class="hidden sm:inline-block px-4 py-2 bg-brand hover:bg-brand-hover text-white font-medium rounded-xl transition-colors text-sm">
-            Sign up
-          </a>
+          {ctaStyle === 'homepage' ? (
+            <a href="/signup" class="hidden sm:inline-block px-5 py-2 border border-border-default hover:border-content-primary text-content-primary font-medium rounded-full transition-colors text-sm">
+              Get Started
+            </a>
+          ) : (
+            <a href="/signup" class="hidden sm:inline-block px-4 py-2 bg-brand hover:bg-brand-hover text-white font-medium rounded-xl transition-colors text-sm">
+              Sign up
+            </a>
+          )}
         </>
       )}
 

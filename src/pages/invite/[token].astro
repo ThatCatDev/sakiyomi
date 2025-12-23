@@ -10,34 +10,37 @@ const cookieHeader = Astro.request.headers.get('Cookie') ?? '';
 const supabase = createSupabaseServerClient(Astro.cookies, cookieHeader);
 const { data: { user } } = await supabase.auth.getUser();
 
-// Fetch invitation details
-const { data: invitation, error: invError } = await supabase
-  .from('team_invitations')
-  .select(`
-    id,
-    team_id,
-    invitation_type,
-    role,
-    status,
-    expires_at,
-    max_uses,
-    use_count,
-    teams (
-      id,
-      name,
-      slug,
-      avatar_url
-    )
-  `)
-  .eq('token', token)
-  .eq('invitation_type', 'link')
+// Fetch invitation details using function (bypasses RLS for team info)
+const { data: inviteData, error: invError } = await supabase
+  .rpc('get_link_invitation', { p_token: token })
   .single();
 
 // Check invitation validity
 let error: string | null = null;
 
+// Transform the flat result into the expected structure
+const invitation = inviteData ? {
+  id: inviteData.id,
+  team_id: inviteData.team_id,
+  invitation_type: inviteData.invitation_type,
+  role: inviteData.role,
+  status: inviteData.status,
+  expires_at: inviteData.expires_at,
+  max_uses: inviteData.max_uses,
+  use_count: inviteData.use_count,
+} : null;
+
+const team = inviteData ? {
+  id: inviteData.team_id,
+  name: inviteData.team_name,
+  slug: inviteData.team_slug,
+  avatar_url: inviteData.team_avatar_url,
+} : null;
+
 if (invError || !invitation) {
   error = 'This invitation link is invalid or has expired.';
+} else if (!team) {
+  error = 'The team for this invitation no longer exists.';
 } else if (invitation.status !== 'pending') {
   error = 'This invitation is no longer valid.';
 } else if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
@@ -46,10 +49,9 @@ if (invError || !invitation) {
   error = 'This invitation has reached its maximum uses.';
 }
 
-const team = invitation?.teams as any;
-
 // Check if user is already a member
 let isAlreadyMember = false;
+
 if (user && team && !error) {
   const { data: existing } = await supabase
     .from('team_members')

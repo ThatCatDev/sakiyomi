@@ -1,9 +1,23 @@
 ---
+import Dropdown from '../ui/Dropdown.astro';
+
 interface Props {
   teamSlug: string;
 }
 
 const { teamSlug } = Astro.props;
+
+const roleOptions = [
+  { value: 'member', label: 'Member' },
+  { value: 'admin', label: 'Admin' },
+];
+
+const expiresOptions = [
+  { value: '1', label: '1 day' },
+  { value: '7', label: '7 days' },
+  { value: '30', label: '30 days' },
+  { value: '', label: 'Never' },
+];
 ---
 
 <div
@@ -49,17 +63,19 @@ const { teamSlug } = Astro.props;
           Create a shareable link that anyone can use to join your team.
         </p>
 
-        <div>
-          <label for="link-role" class="block text-sm font-medium text-content-secondary mb-1.5">
-            Role for new members
-          </label>
-          <select
-            id="link-role"
-            class="w-full px-4 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
-          >
-            <option value="member">Member</option>
-            <option value="admin">Admin</option>
-          </select>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-content-secondary mb-1.5">
+              Role
+            </label>
+            <Dropdown id="link-role" options={roleOptions} value="member" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-content-secondary mb-1.5">
+              Expires in
+            </label>
+            <Dropdown id="link-expires" options={expiresOptions} value="7" />
+          </div>
         </div>
 
         <div id="invite-link-result" class="hidden">
@@ -81,8 +97,7 @@ const { teamSlug } = Astro.props;
               Copy
             </button>
           </div>
-          <p class="text-xs text-content-muted mt-2">
-            This link expires in 7 days and can be used unlimited times.
+          <p id="link-expires-note" class="text-xs text-content-muted mt-2">
           </p>
         </div>
 
@@ -104,28 +119,33 @@ const { teamSlug } = Astro.props;
         <form id="email-invite-form" class="space-y-4">
           <div>
             <label for="invite-email" class="block text-sm font-medium text-content-secondary mb-1.5">
-              Email Address
+              Email Addresses
             </label>
-            <input
-              type="email"
-              id="invite-email"
-              required
-              placeholder="colleague@example.com"
-              class="w-full px-4 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-content-primary placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-brand"
-            />
+            <div class="min-h-[46px] p-2 bg-surface-elevated border border-border-default rounded-xl focus-within:ring-2 focus-within:ring-brand">
+              <div id="email-pills" class="flex flex-wrap gap-1.5 mb-1.5 empty:mb-0"></div>
+              <input
+                type="email"
+                id="invite-email"
+                placeholder="Type email and press Enter"
+                class="w-full bg-transparent text-content-primary placeholder-content-muted focus:outline-none text-sm"
+              />
+            </div>
+            <p class="text-xs text-content-muted mt-1">Press Enter or comma to add multiple emails</p>
           </div>
 
-          <div>
-            <label for="email-role" class="block text-sm font-medium text-content-secondary mb-1.5">
-              Role
-            </label>
-            <select
-              id="email-role"
-              class="w-full px-4 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-content-primary focus:outline-none focus:ring-2 focus:ring-brand"
-            >
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
-            </select>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-content-secondary mb-1.5">
+                Role
+              </label>
+              <Dropdown id="email-role" options={roleOptions} value="member" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-content-secondary mb-1.5">
+                Expires in
+              </label>
+              <Dropdown id="email-expires" options={expiresOptions} value="7" />
+            </div>
           </div>
 
           <div id="email-invite-error" class="hidden text-sm text-status-error bg-status-error/10 px-4 py-2 rounded-lg">
@@ -139,7 +159,7 @@ const { teamSlug } = Astro.props;
             type="submit"
             class="w-full px-4 py-2.5 bg-brand text-white rounded-xl font-medium hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Send Invitation
+            Send Invitations
           </button>
         </form>
       </div>
@@ -219,7 +239,9 @@ const { teamSlug } = Astro.props;
     const generateBtn = document.getElementById('generate-link-btn');
     const linkResult = document.getElementById('invite-link-result');
     const linkInput = document.getElementById('invite-link-input') as HTMLInputElement;
-    const linkRole = document.getElementById('link-role') as HTMLSelectElement;
+    const linkRoleInput = document.getElementById('link-role-input') as HTMLInputElement;
+    const linkExpiresInput = document.getElementById('link-expires-input') as HTMLInputElement;
+    const linkExpiresNote = document.getElementById('link-expires-note');
     const copyBtn = document.getElementById('copy-link-btn');
 
     generateBtn?.addEventListener('click', async () => {
@@ -227,20 +249,27 @@ const { teamSlug } = Astro.props;
       generateBtn.textContent = 'Generating...';
 
       try {
+        const expiresInDays = linkExpiresInput.value ? parseInt(linkExpiresInput.value) : undefined;
         const result = await createInvitation(teamSlug, {
           type: 'link',
-          role: linkRole.value as 'admin' | 'member',
+          role: linkRoleInput.value as 'admin' | 'member',
+          expiresInDays,
         });
 
         const inviteUrl = `${window.location.origin}/invite/${result.token}`;
         linkInput.value = inviteUrl;
         linkResult?.classList.remove('hidden');
         generateBtn.classList.add('hidden');
+
+        // Update note text
+        if (linkExpiresNote) {
+          const expiresText = expiresInDays ? `expires in ${expiresInDays} day${expiresInDays > 1 ? 's' : ''}` : 'never expires';
+          linkExpiresNote.textContent = `This link ${expiresText} and can be used unlimited times.`;
+        }
       } catch (err) {
-        window.showAlert?.({
+        window.showAlert?.(err instanceof Error ? err.message : 'An error occurred', {
           type: 'error',
           title: 'Failed to generate link',
-          message: err instanceof Error ? err.message : 'An error occurred',
         });
         generateBtn.removeAttribute('disabled');
         generateBtn.textContent = 'Generate Invite Link';
@@ -259,37 +288,111 @@ const { teamSlug } = Astro.props;
     // Email invite form
     const emailForm = document.getElementById('email-invite-form') as HTMLFormElement;
     const emailInput = document.getElementById('invite-email') as HTMLInputElement;
-    const emailRole = document.getElementById('email-role') as HTMLSelectElement;
+    const emailPills = document.getElementById('email-pills');
+    const emailRoleInput = document.getElementById('email-role-input') as HTMLInputElement;
+    const emailExpiresInput = document.getElementById('email-expires-input') as HTMLInputElement;
     const emailError = document.getElementById('email-invite-error');
     const emailSuccess = document.getElementById('email-invite-success');
+
+    const emails: string[] = [];
+
+    const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    const addEmail = (email: string) => {
+      const trimmed = email.trim().toLowerCase();
+      if (!trimmed || !isValidEmail(trimmed) || emails.includes(trimmed)) return;
+
+      emails.push(trimmed);
+
+      const pill = document.createElement('span');
+      pill.className = 'inline-flex items-center gap-1 px-2 py-1 bg-brand/10 text-brand rounded-lg text-sm';
+      pill.innerHTML = `
+        <span>${trimmed}</span>
+        <button type="button" class="hover:text-brand-hover" data-remove-email="${trimmed}">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      `;
+      emailPills?.appendChild(pill);
+      emailInput.value = '';
+    };
+
+    const removeEmail = (email: string) => {
+      const idx = emails.indexOf(email);
+      if (idx > -1) emails.splice(idx, 1);
+      const pill = emailPills?.querySelector(`[data-remove-email="${email}"]`)?.parentElement;
+      pill?.remove();
+    };
+
+    emailPills?.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('[data-remove-email]') as HTMLElement;
+      if (btn) removeEmail(btn.dataset.removeEmail!);
+    });
+
+    emailInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
+        e.preventDefault();
+        addEmail(emailInput.value);
+      } else if (e.key === 'Backspace' && !emailInput.value && emails.length > 0) {
+        removeEmail(emails[emails.length - 1]);
+      }
+    });
+
+    emailInput?.addEventListener('blur', () => {
+      if (emailInput.value.trim()) addEmail(emailInput.value);
+    });
 
     emailForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      // Add any remaining text in input
+      if (emailInput.value.trim()) addEmail(emailInput.value);
+
+      if (emails.length === 0) {
+        if (emailError) {
+          emailError.textContent = 'Please add at least one email address';
+          emailError.classList.remove('hidden');
+        }
+        return;
+      }
+
       const submitBtn = emailForm.querySelector('button[type="submit"]') as HTMLButtonElement;
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending...';
       emailError?.classList.add('hidden');
       emailSuccess?.classList.add('hidden');
 
-      try {
-        await createInvitation(teamSlug, {
-          type: 'email',
-          email: emailInput.value.trim(),
-          role: emailRole.value as 'admin' | 'member',
-        });
+      const expiresInDays = emailExpiresInput.value ? parseInt(emailExpiresInput.value) : undefined;
+      const results: { success: string[]; failed: string[] } = { success: [], failed: [] };
 
-        emailSuccess?.classList.remove('hidden');
-        emailInput.value = '';
-      } catch (err) {
-        if (emailError) {
-          emailError.textContent = err instanceof Error ? err.message : 'Failed to send invitation';
-          emailError.classList.remove('hidden');
+      for (const email of [...emails]) {
+        submitBtn.textContent = `Sending ${results.success.length + results.failed.length + 1}/${emails.length}...`;
+        try {
+          await createInvitation(teamSlug, {
+            type: 'email',
+            email,
+            role: emailRoleInput.value as 'admin' | 'member',
+            expiresInDays,
+          });
+          results.success.push(email);
+          removeEmail(email);
+        } catch (err) {
+          results.failed.push(email);
         }
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Send Invitation';
       }
+
+      if (results.success.length > 0 && emailSuccess) {
+        emailSuccess.textContent = `${results.success.length} invitation${results.success.length > 1 ? 's' : ''} sent successfully!`;
+        emailSuccess.classList.remove('hidden');
+      }
+
+      if (results.failed.length > 0 && emailError) {
+        emailError.textContent = `Failed to send to: ${results.failed.join(', ')}`;
+        emailError.classList.remove('hidden');
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Send Invitations';
     });
   }
 
@@ -303,13 +406,23 @@ const { teamSlug } = Astro.props;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
 
-      // Reset state
+      // Reset link tab state
       const linkResult = document.getElementById('invite-link-result');
       const generateBtn = document.getElementById('generate-link-btn');
       linkResult?.classList.add('hidden');
       generateBtn?.classList.remove('hidden');
       generateBtn?.removeAttribute('disabled');
       if (generateBtn) generateBtn.textContent = 'Generate Invite Link';
+
+      // Reset email tab state
+      const emailPills = document.getElementById('email-pills');
+      const emailInput = document.getElementById('invite-email') as HTMLInputElement;
+      const emailError = document.getElementById('email-invite-error');
+      const emailSuccess = document.getElementById('email-invite-success');
+      if (emailPills) emailPills.innerHTML = '';
+      if (emailInput) emailInput.value = '';
+      emailError?.classList.add('hidden');
+      emailSuccess?.classList.add('hidden');
     }
   };
 </script>

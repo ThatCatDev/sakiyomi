@@ -39,24 +39,25 @@ const sortedMembers = [...members].sort((a, b) => {
     const teamSlug = list.dataset.teamSlug;
     if (!teamSlug) return;
 
-    // Handle role changes
+    // Handle role changes (from Dropdown component)
     list.addEventListener('change', async (e) => {
-      const target = e.target as HTMLSelectElement;
-      if (!target.matches('[data-role-select]')) return;
+      const target = e.target as HTMLInputElement;
 
-      const userId = target.dataset.userId;
+      // Find the parent role-select container
+      const roleSelectContainer = target.closest('[data-role-select]') as HTMLElement;
+      if (!roleSelectContainer) return;
+
+      const userId = roleSelectContainer.dataset.userId;
       const newRole = target.value as 'admin' | 'member';
 
-      if (!userId) return;
+      if (!userId || !newRole) return;
 
       try {
         await updateMemberRole(teamSlug, userId, newRole);
       } catch (err) {
-        // Revert selection on error
-        window.showAlert?.({
+        window.showAlert?.(err instanceof Error ? err.message : 'An error occurred', {
           type: 'error',
           title: 'Failed to update role',
-          message: err instanceof Error ? err.message : 'An error occurred',
         });
         // Refresh to get correct state
         window.location.reload();
@@ -70,25 +71,30 @@ const sortedMembers = [...members].sort((a, b) => {
       if (!removeBtn) return;
 
       const userId = removeBtn.dataset.userId;
-      const userName = removeBtn.dataset.userName;
+      const userName = removeBtn.dataset.userName || 'this member';
 
       if (!userId) return;
 
-      const confirmed = confirm(`Are you sure you want to remove ${userName} from the team?`);
-      if (!confirmed) return;
-
-      try {
-        await removeMember(teamSlug, userId);
-        // Remove the member element from DOM
-        const memberEl = document.querySelector(`[data-member-id="${userId}"]`);
-        memberEl?.remove();
-      } catch (err) {
-        window.showAlert?.({
-          type: 'error',
-          title: 'Failed to remove member',
-          message: err instanceof Error ? err.message : 'An error occurred',
-        });
-      }
+      (window as any).showConfirm?.({
+        title: 'Remove Team Member',
+        message: `Are you sure you want to remove ${userName} from the team? They will lose access to all team resources.`,
+        confirmText: 'Remove',
+        cancelText: 'Keep',
+        variant: 'danger',
+        onConfirm: async () => {
+          try {
+            await removeMember(teamSlug, userId);
+            // Remove the member element from DOM
+            const memberEl = document.querySelector(`[data-member-id="${userId}"]`);
+            memberEl?.remove();
+          } catch (err) {
+            window.showAlert?.(err instanceof Error ? err.message : 'An error occurred', {
+              type: 'error',
+              title: 'Failed to remove member',
+            });
+          }
+        },
+      });
     });
   }
 

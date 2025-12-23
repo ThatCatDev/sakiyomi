@@ -9,6 +9,7 @@ interface Props {
 const { invitations, teamSlug } = Astro.props;
 
 const pendingInvitations = invitations.filter((inv) => inv.status === 'pending');
+const baseUrl = Astro.url.origin;
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return 'Never';
@@ -17,6 +18,11 @@ function formatDate(dateStr: string | null): string {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+function getInviteUrl(token: string | null): string | null {
+  if (!token) return null;
+  return `${baseUrl}/invite/${token}`;
 }
 ---
 
@@ -27,8 +33,13 @@ function formatDate(dateStr: string | null): string {
     <div class="space-y-2">
       {pendingInvitations.map((invitation) => (
         <div
-          class="flex items-center justify-between py-3 px-4 bg-surface-elevated rounded-xl"
+          class="flex items-center justify-between py-3 px-4 bg-surface-elevated rounded-xl cursor-pointer hover:bg-surface-hover transition-colors"
           data-invitation-id={invitation.id}
+          data-invitation-token={invitation.token || ''}
+          data-invitation-email={invitation.email || ''}
+          data-invitation-type={invitation.invitation_type}
+          data-invitation-url={getInviteUrl(invitation.token)}
+          data-view-invitation
         >
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
@@ -75,8 +86,77 @@ function formatDate(dateStr: string | null): string {
   )}
 </div>
 
+<!-- Invitation Details Modal -->
+<div
+  id="invitation-details-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-modal-backdrop></div>
+  <div class="relative w-full max-w-md bg-surface-card rounded-2xl shadow-xl border border-border-default">
+    <div class="p-6">
+      <h2 class="text-lg font-semibold text-content-primary mb-4">Invitation Details</h2>
+
+      <!-- Email info (shown for email invites) -->
+      <div id="invitation-email-info" class="hidden mb-4">
+        <p class="text-sm text-content-secondary mb-1">Sent to:</p>
+        <p id="invitation-email-display" class="text-content-primary font-medium"></p>
+      </div>
+
+      <!-- Invite URL -->
+      <div id="invitation-url-section" class="mb-4">
+        <p class="text-sm text-content-secondary mb-2">Invite Link:</p>
+        <div class="flex gap-2">
+          <input
+            type="text"
+            id="invitation-url-input"
+            readonly
+            class="flex-1 px-3 py-2 bg-surface-primary border border-border-default rounded-lg text-content-primary text-sm font-mono"
+          />
+          <button
+            type="button"
+            id="copy-invite-url"
+            class="px-3 py-2 bg-surface-tertiary hover:bg-surface-hover text-content-primary rounded-lg transition-colors"
+            title="Copy link"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- No link available message -->
+      <div id="no-link-message" class="mb-4 hidden">
+        <p class="text-sm text-content-muted bg-surface-elevated px-4 py-3 rounded-lg">
+          This invitation was created before link support was added. Use "Resend Email" to send a new invitation with a link.
+        </p>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-3">
+        <button
+          type="button"
+          id="close-invitation-modal"
+          class="flex-1 px-4 py-2.5 bg-surface-tertiary hover:bg-surface-hover text-content-primary font-medium rounded-xl transition-colors"
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          id="resend-invitation-btn"
+          class="flex-1 px-4 py-2.5 bg-brand hover:bg-brand-hover text-white font-medium rounded-xl transition-colors hidden"
+        >
+          Resend Email
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-  import { revokeInvitation } from '../../lib/team/api';
+  import { revokeInvitation, resendInvitation } from '../../lib/team/api';
 
   function initInvitationsList() {
     const list = document.getElementById('invitations-list');
@@ -85,34 +165,174 @@ function formatDate(dateStr: string | null): string {
     const teamSlug = list.dataset.teamSlug;
     if (!teamSlug) return;
 
-    list.addEventListener('click', async (e) => {
-      const target = e.target as HTMLElement;
-      const revokeBtn = target.closest('[data-revoke-invitation]') as HTMLElement;
-      if (!revokeBtn) return;
+    // Modal elements
+    const modal = document.getElementById('invitation-details-modal');
+    const backdrop = modal?.querySelector('[data-modal-backdrop]');
+    const urlSection = document.getElementById('invitation-url-section');
+    const urlInput = document.getElementById('invitation-url-input') as HTMLInputElement;
+    const copyBtn = document.getElementById('copy-invite-url');
+    const closeBtn = document.getElementById('close-invitation-modal');
+    const resendBtn = document.getElementById('resend-invitation-btn');
+    const emailInfo = document.getElementById('invitation-email-info');
+    const emailDisplay = document.getElementById('invitation-email-display');
+    const noLinkMessage = document.getElementById('no-link-message');
 
-      const invitationId = revokeBtn.dataset.invitationId;
-      if (!invitationId) return;
+    let currentInvitationId: string | null = null;
 
-      const confirmed = confirm('Are you sure you want to revoke this invitation?');
-      if (!confirmed) return;
+    const closeModal = () => {
+      modal?.classList.add('hidden');
+      modal?.classList.remove('flex');
+      currentInvitationId = null;
+    };
+
+    const openModal = (invitationEl: HTMLElement) => {
+      const url = invitationEl.dataset.invitationUrl;
+      const email = invitationEl.dataset.invitationEmail;
+      const type = invitationEl.dataset.invitationType;
+      currentInvitationId = invitationEl.dataset.invitationId || null;
+
+      // Show/hide URL section based on whether there's a URL
+      if (url && url !== 'null') {
+        urlSection?.classList.remove('hidden');
+        noLinkMessage?.classList.add('hidden');
+        if (urlInput) urlInput.value = url;
+      } else {
+        urlSection?.classList.add('hidden');
+        noLinkMessage?.classList.remove('hidden');
+      }
+
+      // Show/hide email info and resend button based on type
+      if (type === 'email' && email) {
+        emailInfo?.classList.remove('hidden');
+        if (emailDisplay) emailDisplay.textContent = email;
+        resendBtn?.classList.remove('hidden');
+      } else {
+        emailInfo?.classList.add('hidden');
+        resendBtn?.classList.add('hidden');
+      }
+
+      modal?.classList.remove('hidden');
+      modal?.classList.add('flex');
+    };
+
+    // Copy URL handler
+    copyBtn?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const textToCopy = urlInput?.value;
+      if (!textToCopy || textToCopy === 'null') {
+        window.showAlert?.('This invitation does not have a link yet. Try resending the email.', {
+          type: 'error',
+          title: 'No link available',
+        });
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        window.showAlert?.('Invite link copied to clipboard', {
+          type: 'success',
+          title: 'Copied!',
+        });
+      } catch (err) {
+        // Fallback: select the text
+        try {
+          urlInput.select();
+          document.execCommand('copy');
+          window.showAlert?.('Invite link copied to clipboard', {
+            type: 'success',
+            title: 'Copied!',
+          });
+        } catch {
+          window.showAlert?.('Please select and copy the link manually', {
+            type: 'error',
+            title: 'Copy failed',
+          });
+        }
+      }
+    });
+
+    // Close modal handlers
+    closeBtn?.addEventListener('click', closeModal);
+    backdrop?.addEventListener('click', closeModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal?.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Resend email handler
+    resendBtn?.addEventListener('click', async () => {
+      if (!currentInvitationId || !teamSlug) {
+        console.error('Missing invitationId or teamSlug', { currentInvitationId, teamSlug });
+        return;
+      }
+
+      const originalText = resendBtn.textContent;
+      resendBtn.textContent = 'Sending...';
+      resendBtn.setAttribute('disabled', 'true');
 
       try {
-        await revokeInvitation(teamSlug, invitationId);
-        // Remove the invitation element from DOM
-        const invEl = document.querySelector(`[data-invitation-id="${invitationId}"]`);
-        invEl?.remove();
-
-        // Check if list is now empty
-        const remaining = list.querySelectorAll('[data-invitation-id]');
-        if (remaining.length === 0) {
-          list.innerHTML = '<p class="text-center py-8 text-content-muted">No pending invitations</p>';
-        }
-      } catch (err) {
-        window.showAlert?.({
-          type: 'error',
-          title: 'Failed to revoke invitation',
-          message: err instanceof Error ? err.message : 'An error occurred',
+        console.log('Resending invitation', { teamSlug, currentInvitationId });
+        await resendInvitation(teamSlug, currentInvitationId);
+        console.log('Resend successful');
+        closeModal();
+        window.showAlert?.('Invitation email has been resent', {
+          type: 'success',
+          title: 'Email Sent',
         });
+        // Refresh the page to show updated token after alert
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (err) {
+        console.error('Resend failed:', err);
+        window.showAlert?.(err instanceof Error ? err.message : 'An error occurred', {
+          type: 'error',
+          title: 'Failed to resend',
+        });
+        resendBtn.textContent = originalText;
+        resendBtn.removeAttribute('disabled');
+      }
+    });
+
+    list.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+
+      // Handle revoke button
+      const revokeBtn = target.closest('[data-revoke-invitation]') as HTMLElement;
+      if (revokeBtn) {
+        e.stopPropagation(); // Prevent opening modal
+        const invitationId = revokeBtn.dataset.invitationId;
+        if (!invitationId) return;
+
+        (window as any).showConfirm?.({
+          title: 'Revoke Invitation',
+          message: 'Are you sure you want to revoke this invitation? The link will no longer work.',
+          confirmText: 'Revoke',
+          cancelText: 'Keep',
+          variant: 'danger',
+          onConfirm: async () => {
+            try {
+              await revokeInvitation(teamSlug, invitationId);
+              const invEl = document.querySelector(`[data-invitation-id="${invitationId}"]`);
+              invEl?.remove();
+
+              const remaining = list.querySelectorAll('[data-invitation-id]');
+              if (remaining.length === 0) {
+                list.innerHTML = '<p class="text-center py-8 text-content-muted">No pending invitations</p>';
+              }
+            } catch (err) {
+              window.showAlert?.(err instanceof Error ? err.message : 'An error occurred', {
+                type: 'error',
+                title: 'Failed to revoke invitation',
+              });
+            }
+          },
+        });
+        return;
+      }
+
+      // Handle clicking on invitation to view details
+      const invitationEl = target.closest('[data-view-invitation]') as HTMLElement;
+      if (invitationEl) {
+        openModal(invitationEl);
       }
     });
   }

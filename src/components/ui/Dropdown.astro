@@ -1,0 +1,232 @@
+---
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  id: string;
+  name?: string;
+  options: Option[];
+  value?: string;
+  placeholder?: string;
+  class?: string;
+  size?: 'sm' | 'md';
+  variant?: 'default' | 'compact';
+  align?: 'left' | 'right';
+}
+
+const {
+  id,
+  name,
+  options,
+  value,
+  placeholder = 'Select...',
+  class: className = '',
+  size = 'md',
+  variant = 'default',
+  align = 'left',
+} = Astro.props;
+
+const selectedOption = options.find(opt => opt.value === value);
+const displayText = selectedOption?.label || placeholder;
+
+const triggerClasses = {
+  default: {
+    sm: 'w-full px-3 py-2 text-sm bg-surface-elevated border border-border-default rounded-xl',
+    md: 'w-full px-4 py-2.5 text-base bg-surface-elevated border border-border-default rounded-xl',
+  },
+  compact: {
+    sm: 'px-3 py-1.5 text-xs bg-surface-card border border-border-default rounded-full',
+    md: 'px-3 py-1.5 text-sm bg-surface-card border border-border-default rounded-full',
+  },
+};
+
+const menuClasses = align === 'right' ? 'right-0' : 'left-0';
+const menuWidth = variant === 'compact' ? 'min-w-[120px]' : 'w-full';
+---
+
+<div class={`dropdown-wrapper relative ${variant === 'default' ? '' : 'inline-block'} ${className}`} data-dropdown-id={id}>
+  <!-- Hidden input for form submission -->
+  <input type="hidden" name={name || id} id={`${id}-input`} value={value || ''} />
+
+  <!-- Trigger button -->
+  <button
+    type="button"
+    class={`dropdown-trigger flex items-center justify-between gap-2 text-content-primary hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand transition-colors ${triggerClasses[variant][size]}`}
+    aria-haspopup="listbox"
+    aria-expanded="false"
+    data-dropdown-trigger
+  >
+    <span class="dropdown-text truncate" data-dropdown-text>{displayText}</span>
+    <svg class="w-4 h-4 text-content-muted flex-shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-dropdown-chevron>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+
+  <!-- Dropdown menu -->
+  <div
+    class={`dropdown-menu absolute z-50 ${menuWidth} ${menuClasses} mt-1 py-1 bg-surface-card border border-border-default rounded-xl shadow-lg opacity-0 invisible transition-all duration-150 transform scale-95 origin-top`}
+    role="listbox"
+    data-dropdown-menu
+  >
+    {options.map((option, index) => (
+      <button
+        type="button"
+        class={`dropdown-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-brand hover:text-white transition-colors ${option.value === value ? 'text-brand font-medium' : 'text-content-primary'}`}
+        role="option"
+        aria-selected={option.value === value}
+        data-dropdown-option
+        data-value={option.value}
+        data-label={option.label}
+        tabindex={index === 0 ? 0 : -1}
+      >
+        <span class={`w-5 flex-shrink-0 ${option.value === value ? '' : 'opacity-0'}`}>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </span>
+        <span class="truncate">{option.label}</span>
+      </button>
+    ))}
+  </div>
+</div>
+
+<script>
+  function initDropdowns() {
+    document.querySelectorAll('[data-dropdown-id]').forEach((wrapper) => {
+      const trigger = wrapper.querySelector('[data-dropdown-trigger]') as HTMLButtonElement;
+      const menu = wrapper.querySelector('[data-dropdown-menu]') as HTMLElement;
+      const input = wrapper.querySelector('input[type="hidden"]') as HTMLInputElement;
+      const textEl = wrapper.querySelector('[data-dropdown-text]') as HTMLElement;
+      const chevron = wrapper.querySelector('[data-dropdown-chevron]') as HTMLElement;
+      const options = wrapper.querySelectorAll('[data-dropdown-option]') as NodeListOf<HTMLButtonElement>;
+
+      if (!trigger || !menu || !input || !textEl) return;
+
+      // Skip if already initialized
+      if ((trigger as any).__dropdownInit) return;
+      (trigger as any).__dropdownInit = true;
+
+      let isOpen = false;
+      let focusedIndex = -1;
+
+      const open = () => {
+        isOpen = true;
+        trigger.setAttribute('aria-expanded', 'true');
+        menu.classList.remove('opacity-0', 'invisible', 'scale-95');
+        menu.classList.add('opacity-100', 'visible', 'scale-100');
+        chevron?.classList.add('rotate-180');
+
+        // Focus currently selected option
+        const selectedIdx = Array.from(options).findIndex(opt => opt.getAttribute('aria-selected') === 'true');
+        focusedIndex = selectedIdx >= 0 ? selectedIdx : 0;
+        options[focusedIndex]?.focus();
+      };
+
+      const close = () => {
+        isOpen = false;
+        trigger.setAttribute('aria-expanded', 'false');
+        menu.classList.add('opacity-0', 'invisible', 'scale-95');
+        menu.classList.remove('opacity-100', 'visible', 'scale-100');
+        chevron?.classList.remove('rotate-180');
+        focusedIndex = -1;
+      };
+
+      const select = (option: HTMLButtonElement) => {
+        const value = option.dataset.value || '';
+        const label = option.dataset.label || '';
+
+        input.value = value;
+        textEl.textContent = label;
+
+        // Update selected state
+        options.forEach((opt) => {
+          const isSelected = opt === option;
+          opt.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+          if (isSelected) {
+            opt.classList.add('text-brand', 'font-medium');
+            opt.classList.remove('text-content-primary');
+            opt.querySelector('span')?.classList.remove('opacity-0');
+          } else {
+            opt.classList.remove('text-brand', 'font-medium');
+            opt.classList.add('text-content-primary');
+            opt.querySelector('span')?.classList.add('opacity-0');
+          }
+        });
+
+        // Dispatch change event
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        close();
+        trigger.focus();
+      };
+
+      // Toggle on trigger click
+      trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        isOpen ? close() : open();
+      });
+
+      // Select option on click
+      options.forEach((option) => {
+        option.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          select(option);
+        });
+      });
+
+      // Keyboard navigation
+      wrapper.addEventListener('keydown', (e) => {
+        const key = (e as KeyboardEvent).key;
+
+        if (!isOpen && (key === 'Enter' || key === ' ' || key === 'ArrowDown')) {
+          e.preventDefault();
+          open();
+          return;
+        }
+
+        if (isOpen) {
+          switch (key) {
+            case 'Escape':
+              e.preventDefault();
+              close();
+              trigger.focus();
+              break;
+            case 'ArrowDown':
+              e.preventDefault();
+              focusedIndex = (focusedIndex + 1) % options.length;
+              options[focusedIndex]?.focus();
+              break;
+            case 'ArrowUp':
+              e.preventDefault();
+              focusedIndex = focusedIndex <= 0 ? options.length - 1 : focusedIndex - 1;
+              options[focusedIndex]?.focus();
+              break;
+            case 'Enter':
+            case ' ':
+              e.preventDefault();
+              if (focusedIndex >= 0) {
+                select(options[focusedIndex]);
+              }
+              break;
+            case 'Tab':
+              close();
+              break;
+          }
+        }
+      });
+
+      // Close on outside click
+      document.addEventListener('click', (e) => {
+        if (isOpen && !wrapper.contains(e.target as Node)) {
+          close();
+        }
+      });
+    });
+  }
+
+  initDropdowns();
+  document.addEventListener('astro:page-load', initDropdowns);
+</script>
