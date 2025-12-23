@@ -1,7 +1,8 @@
 // Room BLoC (Business Logic Component)
 // Manages room state and coordinates between UI and API
 
-import { createClient, type SupabaseClient, type RealtimeChannel } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 import type { VotingStatus, Participant, RoomState, VoteResult } from './types';
 import * as api from './api';
 
@@ -54,7 +55,7 @@ export class RoomBloc {
     supabaseAnonKey: string,
     initialState: RoomState & { currentVote?: string | null; appName?: string }
   ) {
-    this.supabase = createClient(supabaseUrl, supabaseAnonKey);
+    this.supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
     this.roomId = initialState.roomId;
     this.roomName = initialState.roomName;
     this.votingStatus = initialState.votingStatus;
@@ -160,7 +161,9 @@ export class RoomBloc {
           });
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log('[RoomBloc] Participants channel:', status, err?.message || '');
+      });
 
     // Subscribe to room changes
     this.roomChannel = this.supabase
@@ -174,6 +177,7 @@ export class RoomBloc {
           filter: `id=eq.${this.roomId}`,
         },
         (payload) => {
+          console.log('[RoomBloc] Room update received:', payload.new);
           const room = payload.new as {
             name: string;
             voting_status: VotingStatus;
@@ -235,7 +239,9 @@ export class RoomBloc {
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log('[RoomBloc] Room channel:', status, err?.message || '');
+      });
 
     // Subscribe to presence for online status
     this.presenceChannel = this.supabase
