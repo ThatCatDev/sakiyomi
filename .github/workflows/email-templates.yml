@@ -34,6 +34,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{
               \"site_url\": \"${SITE_URL}\",
+              \"uri_allow_list\": \"${SITE_URL},${SITE_URL}/**\",
               \"mailer_templates_confirmation_content\": ${CONFIRM},
               \"mailer_templates_confirmation_subject\": \"Confirm Your Email - Sakiyomi\",
               \"mailer_templates_recovery_content\": ${RECOVERY},
