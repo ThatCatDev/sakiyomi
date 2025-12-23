@@ -1,0 +1,156 @@
+---
+interface Props {
+  teamSlug: string;
+}
+
+const { teamSlug } = Astro.props;
+---
+
+<div
+  id="delete-room-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="delete-room-modal-title"
+  data-team-slug={teamSlug}
+>
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-modal-backdrop></div>
+
+  <!-- Modal -->
+  <div class="relative w-full max-w-md bg-surface-card rounded-2xl shadow-xl border border-border-default">
+    <div class="p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">
+          <svg class="w-5 h-5 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </div>
+        <h2 id="delete-room-modal-title" class="text-xl font-semibold text-content-primary">
+          Delete Room
+        </h2>
+      </div>
+
+      <p class="text-content-secondary mb-2">
+        Are you sure you want to delete <span id="delete-room-name" class="font-semibold text-content-primary"></span>?
+      </p>
+      <p class="text-sm text-content-muted mb-6">
+        This will permanently delete the room and all its voting history. This action cannot be undone.
+      </p>
+
+      <div id="delete-room-error" class="hidden text-sm text-status-error bg-status-error/10 px-4 py-2 rounded-lg mb-4">
+      </div>
+
+      <div class="flex gap-3">
+        <button
+          type="button"
+          data-modal-close
+          class="flex-1 px-4 py-2.5 bg-surface-elevated text-content-primary rounded-xl font-medium hover:bg-surface-hover transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="confirm-delete-room-btn"
+          class="flex-1 px-4 py-2.5 bg-error text-white rounded-xl font-medium hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Delete Room
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initDeleteRoomModal() {
+    const modal = document.getElementById('delete-room-modal');
+    if (!modal) return;
+
+    // Skip if already initialized
+    if ((modal as any).__deleteRoomInit) return;
+    (modal as any).__deleteRoomInit = true;
+
+    const teamSlug = modal.dataset.teamSlug;
+    const backdrop = modal.querySelector('[data-modal-backdrop]');
+    const closeBtn = modal.querySelector('[data-modal-close]');
+    const confirmBtn = document.getElementById('confirm-delete-room-btn') as HTMLButtonElement;
+    const roomNameSpan = document.getElementById('delete-room-name');
+    const errorDiv = document.getElementById('delete-room-error');
+
+    let roomIdToDelete: string | null = null;
+
+    // Close modal handlers
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      errorDiv?.classList.add('hidden');
+      roomIdToDelete = null;
+    };
+
+    backdrop?.addEventListener('click', closeModal);
+    closeBtn?.addEventListener('click', closeModal);
+
+    // Handle escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Handle delete confirmation
+    confirmBtn?.addEventListener('click', async () => {
+      if (!roomIdToDelete) return;
+
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Deleting...';
+      errorDiv?.classList.add('hidden');
+
+      try {
+        const response = await fetch(`/api/rooms/${roomIdToDelete}/delete`, {
+          method: 'DELETE',
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to delete room');
+        }
+
+        // Remove the room card from the list
+        const roomCard = document.querySelector(`[data-room-id="${roomIdToDelete}"]`);
+        roomCard?.remove();
+
+        // Check if no rooms left
+        const roomsContainer = document.querySelector('[data-rooms-container]');
+        const remainingRooms = roomsContainer?.querySelectorAll('[data-room-id]');
+        if (remainingRooms?.length === 0) {
+          // Reload to show empty state
+          window.location.reload();
+        }
+
+        closeModal();
+      } catch (err) {
+        if (errorDiv) {
+          errorDiv.textContent = err instanceof Error ? err.message : 'Failed to delete room';
+          errorDiv.classList.remove('hidden');
+        }
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Delete Room';
+      }
+    });
+
+    // Export function to open modal
+    (window as any).openDeleteRoomModal = (roomId: string, roomName: string) => {
+      roomIdToDelete = roomId;
+      if (roomNameSpan) {
+        roomNameSpan.textContent = roomName;
+      }
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+  }
+
+  initDeleteRoomModal();
+  document.addEventListener('astro:page-load', initDeleteRoomModal);
+</script>

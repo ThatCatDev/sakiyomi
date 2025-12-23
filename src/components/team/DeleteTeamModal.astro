@@ -101,6 +101,10 @@ const { teamSlug, teamName } = Astro.props;
     const modal = document.getElementById('delete-team-modal');
     if (!modal) return;
 
+    // Skip if already initialized
+    if ((modal as any).__deleteTeamInit) return;
+    (modal as any).__deleteTeamInit = true;
+
     const teamSlug = modal.dataset.teamSlug;
     const teamName = modal.dataset.teamName;
     if (!teamSlug || !teamName) return;

@@ -1,5 +1,6 @@
 ---
-import { ViewTransitions } from 'astro:transitions';
+// ViewTransitions disabled - causes issues with room state management
+// import { ViewTransitions } from 'astro:transitions';
 import '../styles/global.css';
 import { getBrandConfig } from '../lib/branding';
 import PostHog from '../components/PostHog.astro';
@@ -83,7 +84,6 @@ const imageURL = new URL(image, Astro.site || Astro.url.origin);
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
 		<meta name="generator" content={Astro.generator} />
-		<ViewTransitions />
 	</head>
 	<body class="min-h-screen antialiased transition-colors duration-200">
 		<PostHog />

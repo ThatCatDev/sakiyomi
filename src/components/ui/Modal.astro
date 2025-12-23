@@ -49,39 +49,72 @@ const sizeClasses = {
   </div>
 </div>
 
-<script define:vars={{ id }}>
-  // Helper functions attached to window for this modal
-  window[`open_${id}`] = function() {
+<script is:inline>
+  // Generic modal open/close functions that work with any modal ID
+  window.openModal = function(id) {
     const modal = document.getElementById(id);
-    modal?.classList.remove('hidden', 'closing');
+    if (modal) {
+      modal.classList.remove('hidden', 'closing');
+    }
   };
 
-  window[`close_${id}`] = function() {
+  window.closeModal = function(id) {
     const modal = document.getElementById(id);
-    modal?.classList.add('closing');
-    setTimeout(() => {
-      modal?.classList.add('hidden');
-      modal?.classList.remove('closing');
-    }, 150);
+    if (modal) {
+      modal.classList.add('closing');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('closing');
+      }, 150);
+    }
   };
 
-  // Set up backdrop click and escape key handlers
-  const modal = document.getElementById(id);
+  // Also create convenience functions for specific modal IDs
+  function setupModalFunctions() {
+    document.querySelectorAll('.modal-backdrop').forEach((modal) => {
+      const id = modal.id;
+      if (!id) return;
 
-  modal?.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      window[`close_${id}`]();
-    }
-  });
+      // Create window functions for this modal
+      window['open_' + id] = function() { window.openModal(id); };
+      window['close_' + id] = function() { window.closeModal(id); };
 
-  // Close button click
-  modal?.querySelector('.close-modal-btn')?.addEventListener('click', () => {
-    window[`close_${id}`]();
-  });
+      // Skip event binding if already done
+      if (modal.__modalInit) return;
+      modal.__modalInit = true;
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !modal?.classList.contains('hidden')) {
-      window[`close_${id}`]();
-    }
-  });
+      // Backdrop click to close
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          window.closeModal(id);
+        }
+      });
+
+      // Close button click
+      var closeBtn = modal.querySelector('.close-modal-btn');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          window.closeModal(id);
+        });
+      }
+    });
+  }
+
+  // Global escape key handler
+  if (!window.__modalEscapeInit) {
+    window.__modalEscapeInit = true;
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-backdrop:not(.hidden)').forEach(function(modal) {
+          window.closeModal(modal.id);
+        });
+      }
+    });
+  }
+
+  // Run on initial load
+  setupModalFunctions();
+
+  // Run after View Transitions
+  document.addEventListener('astro:page-load', setupModalFunctions);
 </script>

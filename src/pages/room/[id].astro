@@ -82,16 +82,21 @@ if (sessionId) {
   currentParticipant = data as Participant | null;
 }
 
-// Auto-join signed-in users who haven't joined yet
-if (user && !currentParticipant) {
-  // Get user's profile for display name
+// Get user's profile for display name (used for auto-join and fallback in JoinForm)
+let userDisplayName = '';
+if (user) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('display_name, email, avatar_url')
     .eq('id', user.id)
     .single();
 
-  const displayName = profile?.display_name || profile?.email || user.email || 'Anonymous';
+  userDisplayName = profile?.display_name || profile?.email || user.email || '';
+}
+
+// Auto-join signed-in users who haven't joined yet
+if (user && !currentParticipant) {
+  const displayName = userDisplayName || 'Anonymous';
 
   // Create session ID if needed
   if (!sessionId) {
@@ -124,6 +129,24 @@ if (user && !currentParticipant) {
   const avatarStyle = avatarStyles[Math.floor(Math.random() * avatarStyles.length)];
   const avatarSeed = `auto-${Date.now()}`;
 
+  // Check if user is a team admin/owner for this room's team
+  let isTeamAdmin = false;
+  if (team) {
+    const { data: membership } = await supabase
+      .from('team_members')
+      .select('role')
+      .eq('team_id', team.id)
+      .eq('user_id', user.id)
+      .single();
+
+    isTeamAdmin = membership?.role === 'owner' || membership?.role === 'admin';
+  }
+
+  // Determine role: team admins are managers in team rooms, otherwise creator is manager
+  const isTeamRoom = !!team;
+  const shouldBeManager = isTeamRoom ? isTeamAdmin : (isCreator && !existingManager);
+  const finalRole = shouldBeManager ? 'manager' : 'member';
+
   // Auto-join the user
   const { data: newParticipant, error: joinError } = await supabase
     .from('room_participants')
@@ -132,7 +155,7 @@ if (user && !currentParticipant) {
       name: displayName,
       user_id: user.id,
       session_id: sessionId,
-      role,
+      role: finalRole,
       avatar_style: avatarStyle,
       avatar_seed: avatarSeed,
     })
@@ -197,7 +220,7 @@ const appName = getAppName(Astro.url.hostname);
       <!-- Center: Voting Area -->
       <div class="flex-1 p-6 overflow-y-auto">
         {!currentParticipant ? (
-          <JoinForm roomId={id!} />
+          <JoinForm roomId={id!} defaultName={userDisplayName} />
         ) : (
           <!-- Voting Interface -->
           <div class="max-w-2xl mx-auto">
@@ -311,53 +334,79 @@ const appName = getAppName(Astro.url.hostname);
 <script>
   import { RoomBloc, RoomController } from '../../lib/room';
 
-  // Get room data from embedded JSON
-  const roomDataEl = document.getElementById('room-data');
-  const roomData = roomDataEl ? JSON.parse(roomDataEl.textContent || '{}') : {};
-
-  // Only initialize if we have a participant (user has joined)
-  if (roomData.currentParticipantId) {
-    // Create BLoC with initial state
-    const bloc = new RoomBloc(
-      roomData.supabaseUrl,
-      roomData.supabaseAnonKey,
-      {
-        roomId: roomData.roomId,
-        roomName: roomData.roomName,
-        votingStatus: roomData.votingStatus,
-        currentTopic: roomData.currentTopic,
-        isManager: roomData.isManager,
-        currentParticipantId: roomData.currentParticipantId,
-        showVotes: roomData.showVotes,
-        voteOptions: roomData.voteOptions,
-        currentVote: roomData.currentVote,
-        appName: roomData.appName,
-      }
-    );
-
-    // Create controller and initialize
-    const controller = new RoomController(bloc);
-    controller.init();
-  } else {
-    // JoinForm.astro handles its own form submit
-    // Copy functionality (for non-joined users too)
-    const copyBtn = document.getElementById('copy-btn');
-    const roomUrlInput = document.getElementById('room-url') as HTMLInputElement;
-    const copyIcon = document.getElementById('copy-icon');
-    const checkIcon = document.getElementById('check-icon');
-
-    copyBtn?.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(roomUrlInput.value);
-        copyIcon?.classList.add('hidden');
-        checkIcon?.classList.remove('hidden');
-        setTimeout(() => {
-          copyIcon?.classList.remove('hidden');
-          checkIcon?.classList.add('hidden');
-        }, 2000);
-      } catch (err) {
-        console.error('Failed to copy:', err);
-      }
-    });
+  // Store in window to persist across View Transitions
+  declare global {
+    interface Window {
+      __roomBloc?: RoomBloc;
+      __roomController?: RoomController;
+    }
   }
+
+  function initRoom() {
+    // Clean up previous instance if exists
+    if (window.__roomBloc) {
+      window.__roomBloc.dispose();
+      window.__roomBloc = undefined;
+      window.__roomController = undefined;
+    }
+
+    // Get room data from embedded JSON
+    const roomDataEl = document.getElementById('room-data');
+    if (!roomDataEl) return;
+
+    const roomData = JSON.parse(roomDataEl.textContent || '{}');
+
+    // Only initialize if we have a participant (user has joined)
+    if (roomData.currentParticipantId) {
+      // Create BLoC with initial state
+      window.__roomBloc = new RoomBloc(
+        roomData.supabaseUrl,
+        roomData.supabaseAnonKey,
+        {
+          roomId: roomData.roomId,
+          roomName: roomData.roomName,
+          votingStatus: roomData.votingStatus,
+          currentTopic: roomData.currentTopic,
+          isManager: roomData.isManager,
+          currentParticipantId: roomData.currentParticipantId,
+          showVotes: roomData.showVotes,
+          voteOptions: roomData.voteOptions,
+          currentVote: roomData.currentVote,
+          appName: roomData.appName,
+        }
+      );
+
+      // Create controller and initialize
+      window.__roomController = new RoomController(window.__roomBloc);
+      window.__roomController.init();
+    } else {
+      // JoinForm.astro handles its own form submit
+      // Copy functionality (for non-joined users too)
+      const copyBtn = document.getElementById('copy-btn');
+      const roomUrlInput = document.getElementById('room-url') as HTMLInputElement;
+      const copyIcon = document.getElementById('copy-icon');
+      const checkIcon = document.getElementById('check-icon');
+
+      if (copyBtn && !(copyBtn as any).__copyInit) {
+        (copyBtn as any).__copyInit = true;
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(roomUrlInput.value);
+            copyIcon?.classList.add('hidden');
+            checkIcon?.classList.remove('hidden');
+            setTimeout(() => {
+              copyIcon?.classList.remove('hidden');
+              checkIcon?.classList.add('hidden');
+            }, 2000);
+          } catch (err) {
+            console.error('Failed to copy:', err);
+          }
+        });
+      }
+    }
+  }
+
+  // Run on initial load and after View Transitions
+  initRoom();
+  document.addEventListener('astro:page-load', initRoom);
 </script>

@@ -68,32 +68,39 @@ const initial = email.charAt(0).toUpperCase();
   </div>
 </div>
 
-<script is:inline>
-  (function initUserMenu() {
+<script>
+  function initUserMenu() {
     const menuButton = document.getElementById('user-menu-button');
     const dropdown = document.getElementById('user-dropdown');
     const chevron = document.getElementById('menu-chevron');
 
     if (!menuButton || !dropdown || !chevron) return;
 
-    // Toggle dropdown
-    menuButton.onclick = (e) => {
+    // Remove old listener and add new one
+    const newButton = menuButton.cloneNode(true);
+    menuButton.parentNode?.replaceChild(newButton, menuButton);
+
+    newButton.addEventListener('click', (e) => {
       e.stopPropagation();
       const isHidden = dropdown.classList.contains('hidden');
       dropdown.classList.toggle('hidden');
       chevron.classList.toggle('rotate-180');
-      menuButton.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-    };
-  })();
+      newButton.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+    });
+  }
+
+  // Initialize on load and after View Transitions
+  initUserMenu();
+  document.addEventListener('astro:page-load', initUserMenu);
 
   // Close dropdowns on click outside or escape (only add once)
-  if (!window.__userMenuGlobalInit) {
-    window.__userMenuGlobalInit = true;
+  if (!(window as any).__userMenuGlobalInit) {
+    (window as any).__userMenuGlobalInit = true;
     document.addEventListener('click', (e) => {
       const dropdown = document.getElementById('user-dropdown');
       const menuButton = document.getElementById('user-menu-button');
       const chevron = document.getElementById('menu-chevron');
-      if (dropdown && menuButton && !dropdown.contains(e.target) && !menuButton.contains(e.target)) {
+      if (dropdown && menuButton && !dropdown.contains(e.target as Node) && !menuButton.contains(e.target as Node)) {
         dropdown.classList.add('hidden');
         chevron?.classList.remove('rotate-180');
         menuButton.setAttribute('aria-expanded', 'false');

@@ -174,8 +174,8 @@ export class RoomController {
       // Leave modal
       leaveRoomBtn: document.getElementById('leave-room-btn'),
       leaveModal: document.getElementById('leave-modal'),
-      cancelLeaveBtn: document.getElementById('cancel-leave-btn'),
-      confirmLeaveBtn: document.getElementById('confirm-leave-btn'),
+      cancelLeaveBtn: document.getElementById('cancel-leave-room-btn'),
+      confirmLeaveBtn: document.getElementById('confirm-leave-room-btn'),
 
       // Kick modal
       kickModal: document.getElementById('kick-modal'),

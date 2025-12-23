@@ -193,7 +193,7 @@ test.describe('Room Participants', () => {
       // Leave the room
       await page.click('#leave-room-btn');
       await expect(page.locator('#leave-modal')).toBeVisible();
-      await page.click('#confirm-leave-btn');
+      await page.click('#confirm-leave-room-btn');
 
       // Should see join form again
       await expect(page.locator('#join-section')).toBeVisible();
@@ -243,7 +243,7 @@ test.describe('Room Participants', () => {
       // Leave the room
       await page.click('#leave-room-btn');
       await expect(page.locator('#leave-modal')).toBeVisible();
-      await page.click('#confirm-leave-btn');
+      await page.click('#confirm-leave-room-btn');
 
       // Rejoin with updated name
       await expect(page.locator('#join-section')).toBeVisible();

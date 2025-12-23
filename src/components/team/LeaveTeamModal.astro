@@ -66,6 +66,10 @@ const { teamSlug, teamName } = Astro.props;
     const modal = document.getElementById('leave-team-modal');
     if (!modal) return;
 
+    // Skip if already initialized
+    if ((modal as any).__leaveTeamInit) return;
+    (modal as any).__leaveTeamInit = true;
+
     const teamSlug = modal.dataset.teamSlug;
     if (!teamSlug) return;
 

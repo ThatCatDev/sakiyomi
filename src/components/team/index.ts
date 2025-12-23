@@ -16,6 +16,7 @@ export { };
 // - InvitationsList.astro - List of pending invitations
 // - TeamRoomsList.astro - Grid of team rooms
 // - CreateTeamRoomModal.astro - Modal for creating a team room
+// - DeleteRoomModal.astro - Confirmation modal for deleting a room
 // - TeamSettings.astro - Team settings form
 // - TeamLimitsCard.astro - Usage display (members, rooms)
 // - LeaveTeamModal.astro - Confirmation modal for leaving a team

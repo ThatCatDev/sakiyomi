@@ -5,6 +5,7 @@ import TeamHeader from '../../../components/team/TeamHeader.astro';
 import TeamSidebar from '../../../components/team/TeamSidebar.astro';
 import TeamRoomsList from '../../../components/team/TeamRoomsList.astro';
 import CreateTeamRoomModal from '../../../components/team/CreateTeamRoomModal.astro';
+import DeleteRoomModal from '../../../components/team/DeleteRoomModal.astro';
 import LeaveTeamModal from '../../../components/team/LeaveTeamModal.astro';
 import { createSupabaseServerClient } from '../../../lib/supabase';
 import type { Team, TeamRole } from '../../../lib/team/types';
@@ -92,7 +93,7 @@ const { data: rooms } = await supabase
         <button
           type="button"
           onclick="openLeaveTeamModal?.()"
-          class="text-sm text-content-muted hover:text-status-warning transition-colors"
+          class="text-sm text-error hover:text-error/80 transition-colors"
         >
           Leave this team
         </button>
@@ -101,5 +102,6 @@ const { data: rooms } = await supabase
   </main>
 
   <CreateTeamRoomModal teamSlug={slug!} />
+  <DeleteRoomModal teamSlug={slug!} />
   <LeaveTeamModal teamSlug={slug!} teamName={team.name} />
 </Layout>

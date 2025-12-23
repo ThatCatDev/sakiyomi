@@ -400,7 +400,7 @@ test.describe('Manager Controls', () => {
     // Manager leaves the room
     await page.click('#leave-room-btn');
     await expect(page.locator('#leave-modal')).toBeVisible();
-    await page.click('#confirm-leave-btn');
+    await page.click('#confirm-leave-room-btn');
 
     // Wait for page to reload (leave redirects/reloads)
     await expect(page.locator('#join-section')).toBeVisible({ timeout: 10000 });
@@ -457,7 +457,7 @@ test.describe('Manager Controls', () => {
     // Manager leaves
     await page.click('#leave-room-btn');
     await expect(page.locator('#leave-modal')).toBeVisible();
-    await page.click('#confirm-leave-btn');
+    await page.click('#confirm-leave-room-btn');
     await expect(page.locator('#join-section')).toBeVisible({ timeout: 10000 });
 
     // Wait for database to settle after manager transfer

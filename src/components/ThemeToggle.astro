@@ -18,17 +18,27 @@
 </button>
 
 <script>
-  const toggle = document.getElementById('theme-toggle');
+  function initThemeToggle() {
+    const toggle = document.getElementById('theme-toggle');
+    if (!toggle) return;
 
-  toggle?.addEventListener('click', () => {
-    const isDark = document.documentElement.classList.contains('dark');
+    // Clone to remove old listeners
+    const newToggle = toggle.cloneNode(true) as HTMLElement;
+    toggle.parentNode?.replaceChild(newToggle, toggle);
 
-    if (isDark) {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    } else {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    }
-  });
+    newToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.contains('dark');
+
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+  }
+
+  initThemeToggle();
+  document.addEventListener('astro:page-load', initThemeToggle);
 </script>

@@ -33,10 +33,10 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
     });
   }
 
-  // Fetch room to check if this user is the creator
+  // Fetch room to check if this user is the creator and if it belongs to a team
   const { data: room } = await supabase
     .from('rooms')
-    .select('creator_session_id')
+    .select('creator_session_id, team_id')
     .eq('id', roomId)
     .single();
 
@@ -49,9 +49,26 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
     .limit(1)
     .single();
 
-  // Determine role: manager only if creator AND no existing manager
+  // Check if user is a team admin/owner for this room's team
+  let isTeamAdmin = false;
+  if (user && room?.team_id) {
+    const { data: membership } = await supabase
+      .from('team_members')
+      .select('role')
+      .eq('team_id', room.team_id)
+      .eq('user_id', user.id)
+      .single();
+
+    isTeamAdmin = membership?.role === 'owner' || membership?.role === 'admin';
+  }
+
+  // Determine role:
+  // - Non-team rooms: creator is always manager
+  // - Team rooms: team admins/owners are managers
   const isCreator = room?.creator_session_id === sessionId;
-  const role = (isCreator && !existingManager) ? 'manager' : 'member';
+  const isTeamRoom = !!room?.team_id;
+  const shouldBeManager = isTeamRoom ? isTeamAdmin : isCreator;
+  const role = shouldBeManager ? 'manager' : 'member';
 
   // Try to insert new participant
   const { error: insertError } = await supabase
@@ -66,16 +83,24 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
       avatar_seed: avatarSeed,
     });
 
-  // If duplicate key error, update existing participant instead (preserves role)
+  // If duplicate key error, update existing participant instead
   if (insertError?.code === '23505') {
+    // Build update object - include role promotion for team admins
+    const updateData: Record<string, unknown> = {
+      name: name.trim(),
+      user_id: user?.id || null,
+      avatar_style: avatarStyle,
+      avatar_seed: avatarSeed,
+    };
+
+    // Promote to manager if they should be one (but don't demote existing managers)
+    if (shouldBeManager) {
+      updateData.role = 'manager';
+    }
+
     const { error: updateError } = await supabase
       .from('room_participants')
-      .update({
-        name: name.trim(),
-        user_id: user?.id || null,
-        avatar_style: avatarStyle,
-        avatar_seed: avatarSeed,
-      })
+      .update(updateData)
       .eq('room_id', roomId)
       .eq('session_id', sessionId);
 

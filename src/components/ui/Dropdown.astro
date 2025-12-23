@@ -92,95 +92,98 @@ const menuWidth = variant === 'compact' ? 'min-w-[120px]' : 'w-full';
   </div>
 </div>
 
-<script is:inline>
-  (function initDropdowns() {
-    document.querySelectorAll('[data-dropdown-id]').forEach(function(wrapper) {
-      var trigger = wrapper.querySelector('[data-dropdown-trigger]');
-      var menu = wrapper.querySelector('[data-dropdown-menu]');
-      var input = wrapper.querySelector('input[type="hidden"]');
-      var textEl = wrapper.querySelector('[data-dropdown-text]');
-      var chevron = wrapper.querySelector('[data-dropdown-chevron]');
-      var options = wrapper.querySelectorAll('[data-dropdown-option]');
+<script>
+  function initDropdowns() {
+    document.querySelectorAll('[data-dropdown-id]').forEach((wrapper) => {
+      const trigger = wrapper.querySelector('[data-dropdown-trigger]') as HTMLButtonElement;
+      const menu = wrapper.querySelector('[data-dropdown-menu]') as HTMLElement;
+      const input = wrapper.querySelector('input[type="hidden"]') as HTMLInputElement;
+      const textEl = wrapper.querySelector('[data-dropdown-text]') as HTMLElement;
+      const chevron = wrapper.querySelector('[data-dropdown-chevron]') as HTMLElement;
+      const options = wrapper.querySelectorAll('[data-dropdown-option]') as NodeListOf<HTMLButtonElement>;
 
       if (!trigger || !menu || !input || !textEl) return;
 
-      var isOpen = false;
-      var focusedIndex = -1;
+      // Skip if already initialized (check on wrapper to survive cloning)
+      if ((wrapper as any).__dropdownInit) return;
+      (wrapper as any).__dropdownInit = true;
 
-      function open() {
+      let isOpen = false;
+      let focusedIndex = -1;
+
+      const open = () => {
         isOpen = true;
         trigger.setAttribute('aria-expanded', 'true');
         menu.classList.remove('opacity-0', 'invisible', 'scale-95');
         menu.classList.add('opacity-100', 'visible', 'scale-100');
-        if (chevron) chevron.classList.add('rotate-180');
+        chevron?.classList.add('rotate-180');
 
-        var selectedIdx = Array.from(options).findIndex(function(opt) {
-          return opt.getAttribute('aria-selected') === 'true';
-        });
+        const selectedIdx = Array.from(options).findIndex(opt => opt.getAttribute('aria-selected') === 'true');
         focusedIndex = selectedIdx >= 0 ? selectedIdx : 0;
-        if (options[focusedIndex]) options[focusedIndex].focus();
-      }
+        options[focusedIndex]?.focus();
+      };
 
-      function close() {
+      const close = () => {
         isOpen = false;
         trigger.setAttribute('aria-expanded', 'false');
         menu.classList.add('opacity-0', 'invisible', 'scale-95');
         menu.classList.remove('opacity-100', 'visible', 'scale-100');
-        if (chevron) chevron.classList.remove('rotate-180');
+        chevron?.classList.remove('rotate-180');
         focusedIndex = -1;
-      }
+      };
 
-      function select(option) {
-        var value = option.dataset.value || '';
-        var label = option.dataset.label || '';
+      const select = (option: HTMLButtonElement) => {
+        const value = option.dataset.value || '';
+        const label = option.dataset.label || '';
 
         input.value = value;
         textEl.textContent = label;
 
-        options.forEach(function(opt) {
-          var isSelected = opt === option;
+        options.forEach((opt) => {
+          const isSelected = opt === option;
           opt.setAttribute('aria-selected', isSelected ? 'true' : 'false');
-          var checkSpan = opt.querySelector('span');
+          const checkSpan = opt.querySelector('span');
           if (isSelected) {
             opt.classList.add('text-brand', 'font-medium');
             opt.classList.remove('text-content-primary');
-            if (checkSpan) checkSpan.classList.remove('opacity-0');
+            checkSpan?.classList.remove('opacity-0');
           } else {
             opt.classList.remove('text-brand', 'font-medium');
             opt.classList.add('text-content-primary');
-            if (checkSpan) checkSpan.classList.add('opacity-0');
+            checkSpan?.classList.add('opacity-0');
           }
         });
 
         input.dispatchEvent(new Event('change', { bubbles: true }));
         close();
         trigger.focus();
-      }
+      };
 
-      // Use onclick to avoid duplicate listeners on re-init
-      trigger.onclick = function(e) {
+      trigger.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         isOpen ? close() : open();
-      };
+      });
 
-      options.forEach(function(option) {
-        option.onclick = function(e) {
+      options.forEach((option) => {
+        option.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
           select(option);
-        };
+        });
       });
 
-      wrapper.onkeydown = function(e) {
-        if (!isOpen && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown')) {
+      wrapper.addEventListener('keydown', (e) => {
+        const key = (e as KeyboardEvent).key;
+
+        if (!isOpen && (key === 'Enter' || key === ' ' || key === 'ArrowDown')) {
           e.preventDefault();
           open();
           return;
         }
 
         if (isOpen) {
-          switch (e.key) {
+          switch (key) {
             case 'Escape':
               e.preventDefault();
               close();
@@ -189,12 +192,12 @@ const menuWidth = variant === 'compact' ? 'min-w-[120px]' : 'w-full';
             case 'ArrowDown':
               e.preventDefault();
               focusedIndex = (focusedIndex + 1) % options.length;
-              if (options[focusedIndex]) options[focusedIndex].focus();
+              options[focusedIndex]?.focus();
               break;
             case 'ArrowUp':
               e.preventDefault();
               focusedIndex = focusedIndex <= 0 ? options.length - 1 : focusedIndex - 1;
-              if (options[focusedIndex]) options[focusedIndex].focus();
+              options[focusedIndex]?.focus();
               break;
             case 'Enter':
             case ' ':
@@ -206,23 +209,26 @@ const menuWidth = variant === 'compact' ? 'min-w-[120px]' : 'w-full';
               break;
           }
         }
-      };
+      });
     });
-  })();
+  }
+
+  initDropdowns();
+  document.addEventListener('astro:page-load', initDropdowns);
 
   // Global click handler to close dropdowns (only add once)
-  if (!window.__dropdownGlobalInit) {
-    window.__dropdownGlobalInit = true;
-    document.addEventListener('click', function(e) {
-      document.querySelectorAll('[data-dropdown-menu]').forEach(function(menu) {
-        var wrapper = menu.closest('[data-dropdown-id]');
-        var chevron = wrapper ? wrapper.querySelector('[data-dropdown-chevron]') : null;
-        var trigger = wrapper ? wrapper.querySelector('[data-dropdown-trigger]') : null;
-        if (wrapper && !wrapper.contains(e.target) && !menu.classList.contains('invisible')) {
+  if (!(window as any).__dropdownGlobalInit) {
+    (window as any).__dropdownGlobalInit = true;
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('[data-dropdown-menu]').forEach((menu) => {
+        const wrapper = menu.closest('[data-dropdown-id]');
+        const chevron = wrapper?.querySelector('[data-dropdown-chevron]');
+        const trigger = wrapper?.querySelector('[data-dropdown-trigger]');
+        if (wrapper && !wrapper.contains(e.target as Node) && !menu.classList.contains('invisible')) {
           menu.classList.add('opacity-0', 'invisible', 'scale-95');
           menu.classList.remove('opacity-100', 'visible', 'scale-100');
-          if (chevron) chevron.classList.remove('rotate-180');
-          if (trigger) trigger.setAttribute('aria-expanded', 'false');
+          chevron?.classList.remove('rotate-180');
+          trigger?.setAttribute('aria-expanded', 'false');
         }
       });
     });

@@ -96,6 +96,10 @@
 
     if (!modal || !form || !nameInput || !slugInput || !errorDiv) return;
 
+    // Skip if already initialized
+    if ((modal as any).__createTeamInit) return;
+    (modal as any).__createTeamInit = true;
+
     // Auto-generate slug from name
     nameInput.addEventListener('input', () => {
       const slug = nameInput.value
