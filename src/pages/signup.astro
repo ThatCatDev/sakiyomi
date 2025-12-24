@@ -41,6 +41,20 @@ const appName = getAppName(Astro.url.hostname);
       <div class="bg-surface-card rounded-2xl shadow-xl p-8 border border-border-default">
         <form id="signup-form" method="POST" action="#" class="space-y-6">
           <div>
+            <label for="display-name" class="block text-sm font-medium text-content-secondary mb-2">
+              Name
+            </label>
+            <input
+              type="text"
+              id="display-name"
+              name="display-name"
+              maxlength="50"
+              class="w-full px-4 py-3 bg-surface-primary border border-border-default rounded-xl text-content-primary placeholder-content-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all"
+              placeholder="What should we call you?"
+            />
+          </div>
+
+          <div>
             <label for="email" class="block text-sm font-medium text-content-secondary mb-2">
               Email address
             </label>
@@ -121,6 +135,7 @@ const appName = getAppName(Astro.url.hostname);
     successMessage.classList.add('hidden');
 
     const formData = new FormData(form);
+    const displayName = (formData.get('display-name') as string)?.trim() || null;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirm-password') as string;
@@ -148,6 +163,9 @@ const appName = getAppName(Astro.url.hostname);
       password,
       options: {
         emailRedirectTo,
+        data: {
+          display_name: displayName,
+        },
       },
     });
 

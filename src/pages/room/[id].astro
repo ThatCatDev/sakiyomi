@@ -84,6 +84,7 @@ if (sessionId) {
 
 // Get user's profile for display name (used for auto-join and fallback in JoinForm)
 let userDisplayName = '';
+let userWithProfile: { email?: string; displayName?: string | null; avatarUrl?: string | null } | null = null;
 if (user) {
   const { data: profile } = await supabase
     .from('profiles')
@@ -92,6 +93,11 @@ if (user) {
     .single();
 
   userDisplayName = profile?.display_name || profile?.email || user.email || '';
+  userWithProfile = {
+    email: user.email,
+    displayName: profile?.display_name,
+    avatarUrl: profile?.avatar_url,
+  };
 }
 
 // Auto-join signed-in users who haven't joined yet
@@ -191,7 +197,7 @@ const appName = getAppName(Astro.url.hostname);
 
 <Layout title={`${room.name} - ${appName}`}>
   <main class="min-h-screen flex flex-col">
-    <Header user={user} roomName={room.name} showSettings={!!currentParticipant} participantCount={participants.length} roomUrl={roomUrl}>
+    <Header user={userWithProfile} roomName={room.name} showSettings={!!currentParticipant} participantCount={participants.length} roomUrl={roomUrl}>
       <div slot="extra" class="hidden md:flex items-center gap-2 bg-surface-secondary rounded-lg px-3 py-1.5 border border-border-default">
         <input
           type="text"

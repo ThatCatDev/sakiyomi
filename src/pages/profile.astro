@@ -39,10 +39,16 @@ const avatarStyles = [
 const avatarMatch = profile?.avatar_url?.match(/api\.dicebear\.com\/\d+\.x\/([^/]+)\/svg\?seed=([^&]+)/);
 const currentStyle = avatarMatch?.[1] || 'avataaars';
 const currentSeed = avatarMatch?.[2] ? decodeURIComponent(avatarMatch[2]) : (user.email || user.id);
+
+const userWithProfile = {
+  email: user.email,
+  displayName: profile?.display_name,
+  avatarUrl: profile?.avatar_url,
+};
 ---
 
 <Layout title={`Profile - ${appName}`}>
-  <Header user={user} />
+  <Header user={userWithProfile} />
 
   <main class="container mx-auto px-4 py-8 max-w-2xl">
     <div class="mb-6">

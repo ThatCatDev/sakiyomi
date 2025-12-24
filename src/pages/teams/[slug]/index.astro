@@ -21,6 +21,19 @@ if (!user) {
   return Astro.redirect(`/login?redirect=/teams/${slug}`);
 }
 
+// Get user profile for display name
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('display_name, avatar_url')
+  .eq('id', user.id)
+  .single();
+
+const userWithProfile = {
+  email: user.email,
+  displayName: profile?.display_name,
+  avatarUrl: profile?.avatar_url,
+};
+
 // Get team
 const { data: team } = await supabase
   .from('teams')
@@ -61,7 +74,7 @@ const { data: rooms } = await supabase
 ---
 
 <Layout title={`${team.name} - Teams`}>
-  <Header user={user} />
+  <Header user={userWithProfile} />
 
   <main class="container mx-auto px-4 py-8 max-w-4xl">
     <div class="mb-4">

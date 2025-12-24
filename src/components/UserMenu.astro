@@ -1,10 +1,13 @@
 ---
 interface Props {
   email: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
 }
 
-const { email } = Astro.props;
-const initial = email.charAt(0).toUpperCase();
+const { email, displayName, avatarUrl } = Astro.props;
+const displayText = displayName || email;
+const initial = displayText.charAt(0).toUpperCase();
 ---
 
 <div class="relative" id="user-menu">
@@ -15,10 +18,14 @@ const initial = email.charAt(0).toUpperCase();
     aria-expanded="false"
     aria-haspopup="true"
   >
-    <div class="w-8 h-8 bg-brand rounded-full flex items-center justify-center text-sm font-medium text-white">
-      {initial}
-    </div>
-    <span class="hidden sm:inline text-sm">{email}</span>
+    {avatarUrl ? (
+      <img src={avatarUrl} alt={displayText} class="w-8 h-8 rounded-full bg-surface-elevated" />
+    ) : (
+      <div class="w-8 h-8 bg-brand rounded-full flex items-center justify-center text-sm font-medium text-white">
+        {initial}
+      </div>
+    )}
+    <span class="hidden sm:inline text-sm">{displayText}</span>
     <svg class="w-4 h-4 transition-transform hidden sm:block" id="menu-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
     </svg>

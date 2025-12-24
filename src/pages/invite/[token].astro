@@ -10,6 +10,21 @@ const cookieHeader = Astro.request.headers.get('Cookie') ?? '';
 const supabase = createSupabaseServerClient(Astro.cookies, cookieHeader);
 const { data: { user } } = await supabase.auth.getUser();
 
+// Get user profile for display name (Header)
+let userWithProfile: { email?: string; displayName?: string | null; avatarUrl?: string | null } | null = null;
+if (user) {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name, avatar_url')
+    .eq('id', user.id)
+    .single();
+  userWithProfile = {
+    email: user.email,
+    displayName: profile?.display_name,
+    avatarUrl: profile?.avatar_url,
+  };
+}
+
 // Fetch invitation details using function (bypasses RLS for team info)
 const { data: inviteData, error: invError } = await supabase
   .rpc('get_link_invitation', { p_token: token })
@@ -67,7 +82,7 @@ if (user && team && !error) {
 ---
 
 <Layout title={team ? `Join ${team.name}` : 'Team Invitation'}>
-  <Header user={user} />
+  <Header user={userWithProfile} />
 
   <main class="container mx-auto px-4 py-16 max-w-md">
     <div class="bg-surface-card rounded-2xl border border-border-default p-8 text-center">

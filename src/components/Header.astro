@@ -4,7 +4,7 @@ import ThemeToggle from './ThemeToggle.astro';
 import { getAppName, getDocsUrl } from '../lib/branding';
 
 interface Props {
-  user?: { email?: string } | null;
+  user?: { email?: string; displayName?: string | null; avatarUrl?: string | null } | null;
   roomName?: string;
   showSettings?: boolean;
   participantCount?: number;
@@ -100,7 +100,7 @@ const isRoom = !!roomName;
       )}
 
       {user ? (
-        <UserMenu email={user.email || ''} />
+        <UserMenu email={user.email || ''} displayName={user.displayName} avatarUrl={user.avatarUrl} />
       ) : (
         <>
           <a href="/login" class="hidden sm:inline text-content-secondary hover:text-content-primary transition-colors text-sm">

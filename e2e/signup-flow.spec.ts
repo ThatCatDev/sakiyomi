@@ -7,12 +7,14 @@ test.describe('Full Signup Flow', () => {
 
   test('should complete full signup and email verification flow', async ({ page }) => {
     const testEmail = `test${Date.now()}@test.com`;
+    const displayName = 'Test User';
 
     // Step 1: Go to signup page
     await page.goto('/signup');
     await expect(page.locator('h1')).toHaveText('Sakiyomi');
 
     // Step 2: Fill out signup form
+    await page.fill('input[name="display-name"]', displayName);
     await page.fill('input[name="email"]', testEmail);
     await page.fill('input[name="password"]', testPassword);
     await page.fill('input[name="confirm-password"]', testPassword);
@@ -52,6 +54,9 @@ test.describe('Full Signup Flow', () => {
 
     // Step 8: Should now be logged in
     await expect(page.locator('text=Create Room')).toBeVisible();
+
+    // Step 9: Display name should appear in the header
+    await expect(page.locator('#user-menu-button')).toContainText(displayName);
   });
 
   test('should show error for unverified login attempt', async ({ page }) => {
