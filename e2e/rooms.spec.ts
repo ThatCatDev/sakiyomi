@@ -366,4 +366,43 @@ test.describe('Auto-Join for Signed-In Users', () => {
 
     await newContext.close();
   });
+
+  test('signed-in user without session cookie should still be able to start voting after rejoin', async ({ page, browser }) => {
+    // Sign up user and create a room (they become manager)
+    await signUpUser(page, 'sessioncookie');
+
+    await page.goto('/');
+    await page.click('#create-room-btn');
+    await page.fill('#room-name', 'Session Cookie Test Room');
+    await page.click('#create-modal button[type="submit"]');
+    await page.waitForURL(/\/room\//);
+
+    const roomUrl = page.url();
+
+    // Get auth cookies but NOT the session_id cookie
+    const cookies = await page.context().cookies();
+    const authCookies = cookies.filter(c => c.name !== 'session_id');
+
+    // Open a new context with only auth cookies (simulates session cookie expiring)
+    const newContext = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+    });
+    await newContext.addCookies(authCookies);
+    const newPage = await newContext.newPage();
+
+    // Visit the room - should be recognized by user_id and get a new session_id
+    await newPage.goto(roomUrl);
+
+    // Should NOT see join form (recognized as existing participant)
+    await expect(newPage.locator('#join-form')).not.toBeVisible();
+
+    // Should see manager controls
+    await expect(newPage.locator('#manager-controls')).toBeVisible();
+
+    // Should be able to start voting (this would fail without the fix)
+    await newPage.click('#start-voting-btn');
+    await expect(newPage.locator('#status-banner')).toContainText('Voting');
+
+    await newContext.close();
+  });
 });

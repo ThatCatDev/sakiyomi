@@ -83,13 +83,28 @@ if (user) {
     .single();
   currentParticipant = data as Participant | null;
 
-  // If found by user_id but session_id is different/missing, update session_id
-  if (currentParticipant && sessionId && currentParticipant.session_id !== sessionId) {
-    await supabase
-      .from('room_participants')
-      .update({ session_id: sessionId })
-      .eq('id', currentParticipant.id);
-    currentParticipant.session_id = sessionId;
+  // If found by user_id, ensure we have a valid session_id cookie and DB is in sync
+  if (currentParticipant) {
+    // Create session_id if missing
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      Astro.cookies.set('session_id', sessionId, {
+        path: '/',
+        httpOnly: true,
+        secure: import.meta.env.PROD,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+      });
+    }
+
+    // Update DB if session_id is different
+    if (currentParticipant.session_id !== sessionId) {
+      await supabase
+        .from('room_participants')
+        .update({ session_id: sessionId })
+        .eq('id', currentParticipant.id);
+      currentParticipant.session_id = sessionId;
+    }
   }
 }
 
