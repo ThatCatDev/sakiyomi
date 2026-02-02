@@ -260,4 +260,110 @@ test.describe('Auto-Join for Signed-In Users', () => {
     // Should see manager controls
     await expect(page.locator('#manager-controls')).toBeVisible();
   });
+
+  test('signed-in user should be recognized on rejoin even with different session', async ({ page, browser }) => {
+    // Create a room with an anonymous user
+    await page.goto('/');
+    await page.click('#create-room-btn');
+    await page.fill('#room-name', 'Rejoin Test Room');
+    await page.click('#create-modal button[type="submit"]');
+    await page.waitForURL(/\/room\//);
+
+    const roomUrl = page.url();
+
+    // Open new browser context for signed-in user
+    const newContext = await browser.newContext();
+    const newPage = await newContext.newPage();
+
+    // Sign up and visit the room (first join)
+    const email = await signUpUser(newPage, 'rejointest');
+    await newPage.goto(roomUrl);
+
+    // Should be auto-joined
+    await expect(newPage.locator('#join-form')).not.toBeVisible();
+    await expect(newPage.locator('#your-vote-section')).toBeVisible();
+
+    // Get the participant name displayed
+    const participantName = await newPage.locator(`text=${email}`).first();
+    await expect(participantName).toBeVisible();
+
+    await newContext.close();
+
+    // Open a completely new browser context (simulates new session)
+    const newContext2 = await browser.newContext();
+    const newPage2 = await newContext2.newPage();
+
+    // Sign in with the same account (not sign up - user already exists)
+    await newPage2.goto('/login');
+    await newPage2.fill('input[name="email"]', email);
+    await newPage2.fill('input[name="password"]', 'TestPassword123!');
+    await newPage2.click('button[type="submit"]');
+    await newPage2.waitForURL('/', { timeout: 10000 });
+
+    // Visit the same room again
+    await newPage2.goto(roomUrl);
+
+    // Should be recognized (not see join form, already a participant)
+    await expect(newPage2.locator('#join-form')).not.toBeVisible();
+    await expect(newPage2.locator('#your-vote-section')).toBeVisible();
+
+    // Should still see their name in participants
+    await expect(newPage2.locator(`text=${email}`).first()).toBeVisible();
+
+    await newContext2.close();
+  });
+
+  test('signed-in user with profile avatar should have that avatar in room', async ({ page, browser }) => {
+    // Create a room
+    await page.goto('/');
+    await page.click('#create-room-btn');
+    await page.fill('#room-name', 'Avatar Test Room');
+    await page.click('#create-modal button[type="submit"]');
+    await page.waitForURL(/\/room\//);
+
+    const roomUrl = page.url();
+
+    // Open new browser context for signed-in user with larger viewport (sidebar is hidden on small screens)
+    const newContext = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+    });
+    const newPage = await newContext.newPage();
+
+    // Sign up and set a specific avatar
+    await signUpUser(newPage, 'avatarroom');
+
+    // Go to profile and set a specific avatar style
+    await newPage.goto('/profile');
+
+    // Select the "bottts" (Robots) avatar style
+    await newPage.click('#avatar-styles button[data-style="bottts"]');
+
+    // Save the profile
+    await newPage.click('button:has-text("Save Changes")');
+    await newPage.waitForSelector('#profile-success:visible');
+
+    // Get the avatar URL that was saved
+    const avatarPreview = newPage.locator('#avatar-preview');
+    const savedAvatarSrc = await avatarPreview.getAttribute('src');
+    expect(savedAvatarSrc).toContain('bottts');
+
+    // Now visit the room
+    await newPage.goto(roomUrl);
+
+    // Should be auto-joined
+    await expect(newPage.locator('#join-form')).not.toBeVisible();
+
+    // Wait for page to be ready and check the avatar
+    // The sidebar may be hidden on smaller viewports, but we can check the data attribute
+    const userAvatar = newPage.locator('#current-user-avatar');
+
+    // Wait for element to be attached to DOM
+    await userAvatar.waitFor({ state: 'attached' });
+
+    // The avatar should use the same style (bottts) from their profile
+    const avatarStyle = await userAvatar.getAttribute('data-avatar-style');
+    expect(avatarStyle).toBe('bottts');
+
+    await newContext.close();
+  });
 });

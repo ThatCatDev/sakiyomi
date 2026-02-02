@@ -17,6 +17,7 @@ import RoomSettingsModal from '../../components/room/RoomSettingsModal.astro';
 import AvatarSelectModal from '../../components/room/AvatarSelectModal.astro';
 
 import type { Participant, VotingStatus } from '../../lib/room/types';
+import { parseAvatarUrl } from '../../lib/room/types';
 
 const { id } = Astro.params;
 
@@ -72,7 +73,28 @@ if (team) {
 let sessionId = Astro.cookies.get('session_id')?.value;
 let currentParticipant: Participant | null = null;
 
-if (sessionId) {
+// For logged-in users, first check by user_id (so they're recognized even if session_id changes)
+if (user) {
+  const { data } = await supabase
+    .from('room_participants')
+    .select('*')
+    .eq('room_id', id)
+    .eq('user_id', user.id)
+    .single();
+  currentParticipant = data as Participant | null;
+
+  // If found by user_id but session_id is different/missing, update session_id
+  if (currentParticipant && sessionId && currentParticipant.session_id !== sessionId) {
+    await supabase
+      .from('room_participants')
+      .update({ session_id: sessionId })
+      .eq('id', currentParticipant.id);
+    currentParticipant.session_id = sessionId;
+  }
+}
+
+// Fallback to session_id lookup for anonymous users (or if user_id lookup failed)
+if (!currentParticipant && sessionId) {
   const { data } = await supabase
     .from('room_participants')
     .select('*')
@@ -130,10 +152,19 @@ if (user && !currentParticipant) {
 
   const role = (isCreator && !existingManager) ? 'manager' : 'member';
 
-  // Generate random avatar
-  const avatarStyles = ['adventurer', 'big-smile', 'bottts', 'fun-emoji', 'lorelei', 'micah', 'notionists', 'pixel-art', 'thumbs', 'avataaars'];
-  const avatarStyle = avatarStyles[Math.floor(Math.random() * avatarStyles.length)];
-  const avatarSeed = `auto-${Date.now()}`;
+  // Parse avatar from profile, or generate random if not set
+  let avatarStyle = 'adventurer';
+  let avatarSeed = `auto-${Date.now()}`;
+
+  const parsedAvatar = parseAvatarUrl(userWithProfile?.avatarUrl);
+  if (parsedAvatar) {
+    avatarStyle = parsedAvatar.style;
+    avatarSeed = parsedAvatar.seed;
+  } else {
+    // Generate random avatar if no profile avatar
+    const avatarStyles = ['adventurer', 'big-smile', 'bottts', 'fun-emoji', 'lorelei', 'micah', 'notionists', 'pixel-art', 'thumbs', 'avataaars'];
+    avatarStyle = avatarStyles[Math.floor(Math.random() * avatarStyles.length)];
+  }
 
   // Check if user is a team admin/owner for this room's team
   let isTeamAdmin = false;

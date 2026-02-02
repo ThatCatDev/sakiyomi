@@ -117,9 +117,9 @@ describe('Team Types', () => {
   });
 
   describe('getRoleColor', () => {
-    it('returns amber colors for owner', () => {
+    it('returns warning colors for owner', () => {
       const color = getRoleColor('owner');
-      expect(color).toContain('amber');
+      expect(color).toContain('warning');
     });
 
     it('returns brand colors for admin', () => {

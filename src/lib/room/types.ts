@@ -66,6 +66,19 @@ export function getAvatarUrl(style: string, seed: string, size = 80): string {
   return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&size=${size}`;
 }
 
+// Helper to parse DiceBear avatar URL and extract style and seed
+export function parseAvatarUrl(url: string | null | undefined): { style: string; seed: string } | null {
+  if (!url) return null;
+
+  const match = url.match(/api\.dicebear\.com\/\d+\.x\/([^/]+)\/svg\?seed=([^&]+)/);
+  if (!match) return null;
+
+  return {
+    style: match[1],
+    seed: decodeURIComponent(match[2]),
+  };
+}
+
 export interface RoomState {
   roomId: string;
   roomName: string;

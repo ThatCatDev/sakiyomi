@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { VALID_VOTES } from './types';
+import { VALID_VOTES, getAvatarUrl, parseAvatarUrl } from './types';
 import type { VotingStatus, ParticipantRole, Room, Participant, VoteResult } from './types';
 
 describe('Room Types', () => {
@@ -101,6 +101,71 @@ describe('Room Types', () => {
       expect(result.vote).toBe('5');
       expect(result.count).toBe(3);
       expect(result.percentage).toBe(50);
+    });
+  });
+
+  describe('getAvatarUrl', () => {
+    it('should generate valid DiceBear URL with default size', () => {
+      const url = getAvatarUrl('adventurer', 'test-seed');
+      expect(url).toBe('https://api.dicebear.com/7.x/adventurer/svg?seed=test-seed&size=80');
+    });
+
+    it('should generate valid DiceBear URL with custom size', () => {
+      const url = getAvatarUrl('bottts', 'my-seed', 120);
+      expect(url).toBe('https://api.dicebear.com/7.x/bottts/svg?seed=my-seed&size=120');
+    });
+
+    it('should encode special characters in seed', () => {
+      const url = getAvatarUrl('pixel-art', 'seed with spaces');
+      expect(url).toBe('https://api.dicebear.com/7.x/pixel-art/svg?seed=seed%20with%20spaces&size=80');
+    });
+  });
+
+  describe('parseAvatarUrl', () => {
+    it('should parse valid DiceBear URL with version 7.x', () => {
+      const url = 'https://api.dicebear.com/7.x/adventurer/svg?seed=test-seed&size=80';
+      const result = parseAvatarUrl(url);
+      expect(result).toEqual({ style: 'adventurer', seed: 'test-seed' });
+    });
+
+    it('should parse valid DiceBear URL with version 9.x', () => {
+      const url = 'https://api.dicebear.com/9.x/bottts/svg?seed=my-seed';
+      const result = parseAvatarUrl(url);
+      expect(result).toEqual({ style: 'bottts', seed: 'my-seed' });
+    });
+
+    it('should decode URL-encoded seeds', () => {
+      const url = 'https://api.dicebear.com/7.x/pixel-art/svg?seed=seed%20with%20spaces';
+      const result = parseAvatarUrl(url);
+      expect(result).toEqual({ style: 'pixel-art', seed: 'seed with spaces' });
+    });
+
+    it('should return null for null input', () => {
+      expect(parseAvatarUrl(null)).toBeNull();
+    });
+
+    it('should return null for undefined input', () => {
+      expect(parseAvatarUrl(undefined)).toBeNull();
+    });
+
+    it('should return null for empty string', () => {
+      expect(parseAvatarUrl('')).toBeNull();
+    });
+
+    it('should return null for non-DiceBear URLs', () => {
+      expect(parseAvatarUrl('https://example.com/avatar.png')).toBeNull();
+      expect(parseAvatarUrl('https://gravatar.com/avatar/123')).toBeNull();
+    });
+
+    it('should return null for malformed DiceBear URLs', () => {
+      expect(parseAvatarUrl('https://api.dicebear.com/adventurer/svg')).toBeNull();
+      expect(parseAvatarUrl('https://api.dicebear.com/7.x/adventurer')).toBeNull();
+    });
+
+    it('should handle complex seeds with special characters', () => {
+      const url = 'https://api.dicebear.com/9.x/avataaars/svg?seed=user%40email.com';
+      const result = parseAvatarUrl(url);
+      expect(result).toEqual({ style: 'avataaars', seed: 'user@email.com' });
     });
   });
 });
