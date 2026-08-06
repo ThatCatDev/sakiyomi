@@ -1,3 +1,11 @@
+# Sakiyomi
+
+Online story point estimation for planning sessions.
+
+**Live: [sakiyomi.dev](https://sakiyomi.dev)**
+
+---
+
 # Astro Starter Kit: Basics
 
 ```sh
